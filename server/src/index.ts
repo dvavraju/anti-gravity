@@ -316,7 +316,8 @@ app.post('/api/suggest-pairings', async (req: Request, res: Response) => {
 
 
 // Catch-all route for client-side routing
-app.get('*', (req: Request, res: Response) => {
+// Catch-all route for client-side routing
+app.get(/.*/, (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
 
