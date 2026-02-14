@@ -81,8 +81,9 @@ export default function ItemDetailsModal({ item, onClose, onUpdate, onDelete }: 
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 1000,
-                padding: '20px',
+                padding: '0',
             }}
+            className="md:p-5"
             onClick={onClose}
         >
             <div
@@ -97,7 +98,7 @@ export default function ItemDetailsModal({ item, onClose, onUpdate, onDelete }: 
                     position: 'relative',
                     boxShadow: '0 32px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
                 }}
-                className="animate-scale-in"
+                className="animate-scale-in w-full md:w-auto md:rounded-3xl rounded-t-3xl md:rounded-b-3xl fixed bottom-0 md:relative md:bottom-auto mb-0"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -146,15 +147,7 @@ export default function ItemDetailsModal({ item, onClose, onUpdate, onDelete }: 
                 {/* Content */}
                 <div style={{ padding: '24px' }}>
                     {/* Image */}
-                    <div style={{
-                        width: '100%',
-                        height: '300px',
-                        borderRadius: '16px',
-                        overflow: 'hidden',
-                        marginBottom: '24px',
-                        background: 'linear-gradient(135deg, #111118, #1a1a24)',
-                        border: '1px solid rgba(255, 255, 255, 0.06)',
-                    }}>
+                    <div className="w-full h-[200px] md:h-[300px] rounded-2xl overflow-hidden mb-6 bg-gradient-to-br from-[#111118] to-[#1a1a24] border border-white/5">
                         <img
                             src={item.imageUrl}
                             alt={item.name}

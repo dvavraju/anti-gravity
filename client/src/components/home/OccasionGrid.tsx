@@ -40,9 +40,8 @@ const OccasionCard: React.FC<OccasionCardProps> = ({ title, icon: Icon, color, g
                 transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
                 boxShadow: hovered ? `0 20px 50px ${color}15, 0 0 80px ${color}08` : 'none',
                 animationDelay: `${index * 0.1}s`,
-                gridColumn: featured ? 'span 2' : 'span 1',
             }}
-            className="animate-slide-up"
+            className={`animate-slide-up ${featured ? 'md:col-span-2' : ''}`}
         >
             {/* Ambient glow */}
             <div style={{
@@ -238,11 +237,7 @@ const OccasionGrid: React.FC<OccasionGridProps> = ({ onSelectOccasion }) => {
             </div>
 
             {/* Grid */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '14px',
-            }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                 {occasions.map((occasion, index) => (
                     <OccasionCard
                         key={occasion.value}

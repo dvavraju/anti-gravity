@@ -254,7 +254,7 @@ function App() {
 
   if (phase === 'onboarding' || showChat) {
     return (
-      <div className="min-h-screen bg-[var(--color-base)] flex items-center justify-center p-0 md:p-8">
+      <div className="fixed inset-0 bg-[var(--color-base)] flex items-center justify-center z-50">
         <ChatInterface onComplete={() => {
           setPhase('dashboard');
           setShowChat(false);
@@ -385,7 +385,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-base)] text-[var(--color-base-foreground)] pb-20">
+    <div className="min-h-screen bg-[var(--color-base)] text-[var(--color-base-foreground)] pb-24 md:pb-20">
       <Container>
         {activeTab === 'home' && (
           <div className="py-6 space-y-10">
@@ -525,12 +525,14 @@ function App() {
               color: '#94a3b8',
               background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.06)',
-              padding: '4px 14px',
+              padding: '4px 12px',
               borderRadius: '9999px',
             }}>
               {wardrobeItems.length} items
             </span>
-            <WardrobeGrid items={wardrobeItems} onItemClick={handleItemClick} />
+            <div className="pb-4">
+              <WardrobeGrid items={wardrobeItems} onItemClick={handleItemClick} />
+            </div>
           </div>
         )}
 

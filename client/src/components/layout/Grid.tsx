@@ -10,7 +10,9 @@ const Grid = React.forwardRef<HTMLDivElement, GridProps>(
     ({ className, children, ...props }, ref) => {
         // Default grid behavior as per design system
         // Mobile: 4 cols, Tablet: 8 cols, Desktop: 12 cols
-        const gridSystemClasses = "grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-4 md:gap-6 lg:gap-8";
+        // Mobile: 2 cols, Tablet: 3-4 cols, Desktop: 4-6 cols
+        // Grid system optimized for visual balance
+        const gridSystemClasses = "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6";
 
         return (
             <div

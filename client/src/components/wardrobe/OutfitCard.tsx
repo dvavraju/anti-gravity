@@ -101,13 +101,13 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
             whileTap={{ cursor: 'grabbing' }}
         >
             {/* Card Items Content */}
-            <div className="flex-1 flex flex-col gap-3 p-5 overflow-y-auto">
+            <div className="flex-1 flex flex-col gap-3 p-4 md:p-5 overflow-y-auto">
                 {[
                     itemOutfit.items.find(i => i.category === 'top'),
                     itemOutfit.items.find(i => i.category === 'bottom'),
                     itemOutfit.items.find(i => i.category === 'shoes')
                 ].filter(Boolean).map((item, idx) => (
-                    <div key={item!.id} className="flex relative rounded-2xl overflow-hidden bg-white/5 border border-white/5 min-h-[140px] shrink-0 transform transition-transform hover:scale-[1.01]">
+                    <div key={item!.id} className="flex relative rounded-2xl overflow-hidden bg-white/5 border border-white/5 min-h-[120px] md:min-h-[140px] shrink-0 transform transition-transform hover:scale-[1.01]">
                         <div className="w-[40%] bg-gradient-to-br from-gray-900 to-gray-800 relative">
                             {item!.imageUrl ? (
                                 <img src={item!.imageUrl} alt={item!.name} className="w-full h-full object-cover select-none pointer-events-none" />
@@ -219,13 +219,13 @@ const OutfitCard: React.FC<OutfitCardProps> = ({ outfitHistory, currentIndex, on
             </div>
 
             {/* Controls */}
-            <div className="p-6 flex items-center justify-center gap-8">
+            <div className="p-4 md:p-6 flex items-center justify-center gap-6 md:gap-8 pb-8 md:pb-6">
                 <button
                     onClick={() => { setDirection(-1); onNavigate('prev'); }}
                     disabled={currentIndex === 0}
-                    className="p-4 rounded-full bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                    className="p-3 md:p-4 rounded-full bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors active:scale-95 touch-manipulation"
                 >
-                    <ChevronLeft className="text-slate-200" />
+                    <ChevronLeft className="text-slate-200 w-5 h-5 md:w-6 md:h-6" />
                 </button>
                 <div className="flex gap-2">
                     {outfitHistory.map((_, i) => (
@@ -234,9 +234,9 @@ const OutfitCard: React.FC<OutfitCardProps> = ({ outfitHistory, currentIndex, on
                 </div>
                 <button
                     onClick={() => { setDirection(1); onNavigate('next'); }}
-                    className="p-4 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                    className="p-3 md:p-4 rounded-full bg-white/5 hover:bg-white/10 transition-colors active:scale-95 touch-manipulation"
                 >
-                    <ChevronRight className="text-slate-200" />
+                    <ChevronRight className="text-slate-200 w-5 h-5 md:w-6 md:h-6" />
                 </button>
             </div>
         </div>
