@@ -1,0 +1,399 @@
+@import "tailwindcss";
+
+@theme {
+  /* ─── Dark Theme Colors ─── */
+  --color-primary: #e2e8f0;
+  --color-primary-foreground: #0a0a0f;
+
+  --color-accent: #8b5cf6;
+  --color-accent-foreground: #ffffff;
+
+  --color-action: #6366f1;
+  --color-action-foreground: #ffffff;
+
+  --color-error: #f43f5e;
+  --color-error-foreground: #ffffff;
+
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #ffffff;
+
+  --color-muted: #94a3b8;
+  --color-muted-foreground: #cbd5e1;
+
+  --color-surface: rgba(255, 255, 255, 0.04);
+  --color-surface-foreground: #e2e8f0;
+
+  --color-base: #0a0a0f;
+  --color-base-foreground: #e2e8f0;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.5);
+  --shadow-xl: 0 24px 48px -8px rgb(0 0 0 / 0.5);
+  --shadow-glow: 0 0 24px rgb(139 92 246 / 0.2);
+  --shadow-glow-lg: 0 0 40px rgb(139 92 246 / 0.3);
+
+  /* Typography */
+  --font-display: "Outfit", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.6s ease-out both;
+  --animate-slide-up: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-scale-in: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-shimmer: shimmer 2s ease-in-out infinite;
+  --animate-pulse-soft: pulse-soft 2.5s ease-in-out infinite;
+  --animate-float: float 4s ease-in-out infinite;
+}
+
+/* ─── Keyframe Animations ─── */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-soft {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ─── Custom Utilities ─── */
+@layer utilities {
+
+  /* Typography */
+  .text-display-x {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 8vw, 96px);
+    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .text-heading-l {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 5vw, 48px);
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .text-subtitle-m {
+    font-family: var(--font-body);
+    font-size: clamp(16px, 3vw, 24px);
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  /* Gradient Text */
+  .text-gradient {
+    background: linear-gradient(135deg, #c7d2fe, #a78bfa, #e879f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glass Panels */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+  }
+
+  .glass-card-strong {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+  }
+
+  .glass-nav {
+    background: rgba(10, 10, 15, 0.8);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-panel-dark {
+    background: rgba(15, 15, 25, 0.85);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Gradient Button */
+  .btn-gradient {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6, #d946ef);
+    background-size: 200% 200%;
+    color: white;
+    border: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    animation: gradient-shift 4s ease infinite;
+  }
+
+  .btn-gradient:hover {
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn-glass {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    font-weight: 500;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+  }
+
+  .btn-glass:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Skeleton Loader */
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);
+    background-size: 400% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+    border-radius: var(--radius-md);
+  }
+
+  /* Stagger animation delays */
+  .stagger-1 {
+    animation-delay: 0.05s;
+  }
+
+  .stagger-2 {
+    animation-delay: 0.1s;
+  }
+
+  .stagger-3 {
+    animation-delay: 0.15s;
+  }
+
+  .stagger-4 {
+    animation-delay: 0.2s;
+  }
+
+  .stagger-5 {
+    animation-delay: 0.25s;
+  }
+
+  .stagger-6 {
+    animation-delay: 0.3s;
+  }
+
+  /* Hover Lift */
+  .hover-lift {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .hover-lift:active {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Glow ring */
+  .glow-ring {
+    transition: box-shadow 0.3s ease;
+  }
+
+  .glow-ring:hover {
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ─── Base Styles ─── */
+:root {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: var(--color-base-foreground);
+  background-color: var(--color-base);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a0a0f 0%, #0f0f1a 50%, #0a0a0f 100%);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  transition: all 0.2s ease;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

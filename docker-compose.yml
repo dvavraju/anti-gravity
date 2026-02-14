@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      # Add your GEMINI_API_KEY here or in a .env file
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      # Persist the SQLite database
+      - ./server/wardrobe.db:/app/server/wardrobe.db
