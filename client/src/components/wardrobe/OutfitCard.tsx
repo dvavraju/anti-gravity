@@ -19,6 +19,8 @@ interface SwipeableCardProps {
     onDragEnd: (e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
     onAccept: () => void;
     getLastWornText: (item: Outfit) => string;
+    onNavigate: (direction: 'prev' | 'next') => void;
+    currentIndex: number;
 }
 
 const SwipeableCard: React.FC<SwipeableCardProps> = ({
@@ -27,7 +29,9 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     direction,
     onDragEnd,
     onAccept,
-    getLastWornText
+    getLastWornText,
+    onNavigate,
+    currentIndex
 }) => {
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-200, 200], [-10, 10]);
@@ -143,13 +147,34 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                         <Clock size={14} className="text-slate-500" />
                         <span className="text-xs font-medium text-slate-500">{getLastWornText(itemOutfit)}</span>
                     </div>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onAccept(); }}
-                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 text-white font-bold flex items-center justify-center gap-3 shadow-lg shadow-violet-500/25 active:scale-95 transition-transform"
-                    >
-                        <Check size={20} strokeWidth={3} />
-                        Wearing This Today
-                    </button>
+
+                    <div className="flex items-center gap-3">
+                        {/* Prev Button */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onNavigate('prev'); }}
+                            disabled={currentIndex === 0}
+                            className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+                        >
+                            <ChevronLeft size={20} className="text-slate-200" />
+                        </button>
+
+                        {/* Wear Button */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAccept(); }}
+                            className="flex-1 py-4 rounded-xl bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 text-white font-bold flex items-center justify-center gap-3 shadow-lg shadow-violet-500/25 active:scale-95 transition-transform"
+                        >
+                            <Check size={20} strokeWidth={3} />
+                            Wearing This
+                        </button>
+
+                        {/* Next Button */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onNavigate('next'); }}
+                            className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all active:scale-95"
+                        >
+                            <ChevronRight size={20} className="text-slate-200" />
+                        </button>
+                    </div>
                 </div>
             )}
         </motion.div>
@@ -212,6 +237,11 @@ const OutfitCard: React.FC<OutfitCardProps> = ({ outfitHistory, currentIndex, on
                                 onDragEnd={onDragEnd}
                                 onAccept={onAccept}
                                 getLastWornText={getLastWornText}
+                                onNavigate={(dir) => {
+                                    setDirection(dir === 'next' ? 1 : -1);
+                                    onNavigate(dir);
+                                }}
+                                currentIndex={currentIndex}
                             />
                         );
                     })}
