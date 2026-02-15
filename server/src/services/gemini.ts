@@ -31,7 +31,7 @@ export async function analyzeClothingItem(
     wardrobeContext?: any[]  // User's existing items for personalized learning
 ): Promise<ItemAnalysis> {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         // Build context from user's wardrobe
         const styleContext = wardrobeContext && wardrobeContext.length > 0
@@ -103,7 +103,7 @@ export async function analyzeClothingItem(
 
 export async function analyzeWardrobe(items: any[]): Promise<Record<string, number>> {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const prompt = `
     Analyze this wardrobe list and estimate how many UNIQUE viable outfits (top + bottom + shoes) can be created for each occasion.
@@ -152,7 +152,7 @@ export interface PairingSuggestions {
 export async function suggestPairings(newItem: ItemAnalysis, existingItems: any[]): Promise<PairingSuggestions> {
     try {
         // Try AI-powered pairing first
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const prompt = `
         A user just uploaded this new item:
