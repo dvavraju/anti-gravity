@@ -15,6 +15,22 @@ interface OccasionCardProps {
 
 const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradientFrom, gradientTo, count, onClick, index, className }) => {
     const [hovered, setHovered] = React.useState(false);
+    const [isMobile, setIsMobile] = React.useState(false);
+
+    React.useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    const isActive = hovered || isMobile;
+
+    // Special size for 'Informal' category
+    const isInformal = title === 'Informal';
+    const iconSize = isInformal ? '185px' : '165px';
+    const iconTop = isInformal ? '-45px' : '-40px';
+    const iconRight = isInformal ? '-25px' : '-20px';
 
     return (
         <button
@@ -27,16 +43,16 @@ const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradie
                 flexDirection: 'column',
                 justifyContent: 'flex-end', // Text at bottom
                 padding: '16px',
-                background: hovered
+                background: isActive
                     ? `linear-gradient(160deg, ${gradientFrom}18, ${gradientTo}10, rgba(255,255,255,0.02))`
                     : 'rgba(255, 255, 255, 0.02)',
-                border: `1px solid ${hovered ? `${color}35` : 'rgba(255, 255, 255, 0.05)'}`,
+                border: `1px solid ${isActive ? `${color}35` : 'rgba(255, 255, 255, 0.05)'}`,
                 borderRadius: '24px',
                 cursor: 'pointer',
                 transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
                 textAlign: 'left',
-                transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-                boxShadow: hovered ? `0 20px 50px ${color}15, 0 0 80px ${color}08` : 'none',
+                transform: isActive ? 'translateY(-4px)' : 'translateY(0)',
+                boxShadow: isActive ? `0 20px 50px ${color}15, 0 0 80px ${color}08` : 'none',
                 overflow: 'visible', // Allow icon to pop out
                 animationDelay: `${index * 0.1}s`,
             }}
@@ -48,19 +64,19 @@ const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradie
                 inset: 0,
                 borderRadius: '24px',
                 background: `radial-gradient(circle at top right, ${color}15, transparent 70%)`,
-                opacity: hovered ? 1 : 0.5,
+                opacity: isActive ? 1 : 0.5,
                 transition: 'opacity 0.5s ease',
             }} />
 
             {/* 3D Pop-out Icon */}
             <div style={{
                 position: 'absolute',
-                top: '-30px',
-                right: '-15px',
-                width: '140px',
-                height: '140px',
-                filter: hovered ? 'drop-shadow(0 20px 40px rgba(0,0,0,0.45))' : 'drop-shadow(0 10px 20px rgba(0,0,0,0.35))',
-                transform: hovered ? 'scale(1.1) translateY(-8px) rotate(5deg)' : 'scale(1) rotate(0deg)',
+                top: iconTop,
+                right: iconRight,
+                width: iconSize,
+                height: iconSize,
+                filter: isActive ? 'drop-shadow(0 20px 40px rgba(0,0,0,0.45))' : 'drop-shadow(0 10px 20px rgba(0,0,0,0.35))',
+                transform: isActive ? 'scale(1.1) translateY(-8px) rotate(5deg)' : 'scale(1) rotate(0deg)',
                 transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy transition
                 zIndex: 10,
             }}>
