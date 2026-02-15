@@ -118,8 +118,8 @@ import iconFormal from '../../assets/3d/formal_new.png';
 import iconCasual from '../../assets/3d/casual_new.png';
 import iconFamily from '../../assets/3d/family_new.png';
 import iconSport from '../../assets/3d/sport_new.png';
-// Using old icons as placeholder for now, user can update later
-import iconInformal from '../../assets/3d/icon_informal.png';
+import iconInformal from '../../assets/3d/informal_new.png';
+
 
 
 
