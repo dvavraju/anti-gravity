@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ArrowRight, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 
 interface OccasionCardProps {
     title: string;
@@ -10,10 +10,10 @@ interface OccasionCardProps {
     count?: number;
     onClick: () => void;
     index: number;
-    featured?: boolean;
+    className?: string;
 }
 
-const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradientFrom, gradientTo, count, onClick, index, featured }) => {
+const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradientFrom, gradientTo, count, onClick, index, className }) => {
     const [hovered, setHovered] = React.useState(false);
 
     return (
@@ -25,8 +25,8 @@ const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradie
                 position: 'relative',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between',
-                padding: featured ? '28px' : '22px',
+                justifyContent: 'flex-end', // Text at bottom
+                padding: '16px',
                 background: hovered
                     ? `linear-gradient(160deg, ${gradientFrom}18, ${gradientTo}10, rgba(255,255,255,0.02))`
                     : 'rgba(255, 255, 255, 0.02)',
@@ -34,139 +34,77 @@ const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradie
                 borderRadius: '24px',
                 cursor: 'pointer',
                 transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                minHeight: featured ? '220px' : '160px',
-                overflow: 'hidden',
                 textAlign: 'left',
                 transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
                 boxShadow: hovered ? `0 20px 50px ${color}15, 0 0 80px ${color}08` : 'none',
+                overflow: 'visible', // Allow icon to pop out
                 animationDelay: `${index * 0.1}s`,
             }}
-            className={`animate-slide-up ${featured ? 'md:col-span-2' : ''}`}
+            className={`group animate-slide-up ${className || ''}`}
         >
-            {/* Ambient glow */}
+            {/* Gradient Background Blob */}
             <div style={{
                 position: 'absolute',
-                top: featured ? '-30px' : '-20px',
-                right: featured ? '-30px' : '-20px',
-                width: featured ? '180px' : '120px',
-                height: featured ? '180px' : '120px',
-                borderRadius: '50%',
-                background: `radial-gradient(circle, ${color}${hovered ? '20' : '08'} 0%, transparent 70%)`,
-                transition: 'all 0.5s ease',
-                pointerEvents: 'none',
+                inset: 0,
+                borderRadius: '24px',
+                background: `radial-gradient(circle at top right, ${color}15, transparent 70%)`,
+                opacity: hovered ? 1 : 0.5,
+                transition: 'opacity 0.5s ease',
             }} />
 
-            {/* Top row: icon + count */}
+            {/* 3D Pop-out Icon */}
             <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                width: '100%',
-                marginBottom: '16px',
+                position: 'absolute',
+                top: '-20px',
+                right: '-10px',
+                width: '100px',
+                height: '100px',
+                filter: hovered ? 'drop-shadow(0 15px 30px rgba(0,0,0,0.4))' : 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
+                transform: hovered ? 'scale(1.1) translateY(-5px) rotate(5deg)' : 'scale(1) rotate(0deg)',
+                transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy transition
+                zIndex: 10,
             }}>
-                <div style={{
-                    width: featured ? '80px' : '64px',
-                    height: featured ? '80px' : '64px',
-                    borderRadius: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                    transform: hovered ? 'scale(1.15) rotate(3deg)' : 'scale(1)',
-                    filter: hovered ? 'drop-shadow(0 10px 20px rgba(0,0,0,0.3))' : 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
-                }}>
-                    <img
-                        src={image}
-                        alt={title}
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                            filter: 'brightness(1.1)'
-                        }}
-                    />
-                </div>
-
-                {count !== undefined && count > 0 && (
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        background: `${color}12`,
-                        padding: '5px 12px',
-                        borderRadius: '99px',
-                        border: `1px solid ${color}18`,
-                    }}>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: color, fontVariantNumeric: 'tabular-nums' }}>
-                            {count}
-                        </span>
-                        <span style={{ fontSize: '11px', color: `${color}99`, fontWeight: 500 }}>
-                            looks
-                        </span>
-                    </div>
-                )}
-                {(count === undefined || count === 0) && (
-                    <div style={{
-                        padding: '5px 12px',
-                        borderRadius: '99px',
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(255,255,255,0.05)',
-                    }}>
-                        <span style={{ fontSize: '11px', color: '#475569', fontWeight: 500 }}>
-                            No looks yet
-                        </span>
-                    </div>
-                )}
+                <img
+                    src={image}
+                    alt={title}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                    }}
+                />
             </div>
 
-            {/* Bottom: title + arrow */}
+            {/* Counts pill (top left) */}
             <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-end',
-                width: '100%',
+                position: 'absolute',
+                top: '16px',
+                left: '16px',
+                background: 'rgba(23, 23, 30, 0.6)',
+                backdropFilter: 'blur(4px)',
+                padding: '4px 10px',
+                borderRadius: '99px',
+                border: '1px solid rgba(255,255,255,0.08)',
+                zIndex: 5,
             }}>
-                <div>
-                    <h3 style={{
-                        fontSize: featured ? '26px' : '20px',
-                        fontWeight: 700,
-                        color: '#e2e8f0',
-                        margin: 0,
-                        fontFamily: 'var(--font-display)',
-                        letterSpacing: '-0.03em',
-                        lineHeight: 1.1,
-                        transition: 'color 0.3s ease',
-                    }}>
-                        {title}
-                    </h3>
-                    {featured && (
-                        <p style={{
-                            margin: '8px 0 0 0',
-                            fontSize: '13px',
-                            color: '#64748b',
-                            lineHeight: 1.4,
-                        }}>
-                            Your most styled category
-                        </p>
-                    )}
-                </div>
-                <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    background: hovered ? `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${hovered ? 'transparent' : 'rgba(255,255,255,0.06)'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                    transform: hovered ? 'translateX(4px)' : 'translateX(0)',
-                    boxShadow: hovered ? `0 4px 20px ${color}40` : 'none',
-                    flexShrink: 0,
-                }}>
-                    <ArrowRight size={16} color={hovered ? '#fff' : '#64748b'} strokeWidth={2.5} />
-                </div>
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
+                    {count || 0}
+                </span>
             </div>
+
+            {/* Title */}
+            <h3 style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                color: '#e2e8f0',
+                margin: '36px 0 0 0', // Spacing for icon
+                fontFamily: 'var(--font-display)',
+                letterSpacing: '-0.02em',
+                zIndex: 5,
+                position: 'relative',
+            }}>
+                {title}
+            </h3>
         </button>
     );
 };
@@ -175,8 +113,10 @@ interface OccasionGridProps {
     onSelectOccasion: (occasion: string) => void;
 }
 
-import iconFormal from '../../assets/3d/icon_formal.png';
-import iconCasual from '../../assets/3d/icon_casual.png';
+// Use new icons where available, fallback to old
+import iconFormal from '../../assets/3d/formal_new.png';
+import iconCasual from '../../assets/3d/casual_new.png';
+// Using old icons as placeholder for now, user can update later
 import iconFamily from '../../assets/3d/icon_family.png';
 import iconSport from '../../assets/3d/icon_sport.png';
 import iconInformal from '../../assets/3d/icon_informal.png';
@@ -203,10 +143,6 @@ const OccasionGrid: React.FC<OccasionGridProps> = ({ onSelectOccasion }) => {
             .catch(err => console.error("Failed to fetch wardrobe counts:", err));
     }, []);
 
-    // Find the category with the most outfits for "featured"
-    const maxCount = Math.max(...Object.values(counts), 0);
-    const featuredValue = Object.entries(counts).find(([, v]) => v === maxCount && v > 0)?.[0] || 'formal';
-
     return (
         <div style={{ padding: '8px 0' }}>
             {/* Section Header */}
@@ -214,11 +150,12 @@ const OccasionGrid: React.FC<OccasionGridProps> = ({ onSelectOccasion }) => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                marginBottom: '28px',
+                marginBottom: '24px',
+                paddingLeft: '4px'
             }}>
                 <div style={{
-                    width: '36px',
-                    height: '36px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '10px',
                     background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                     display: 'flex',
@@ -226,49 +163,53 @@ const OccasionGrid: React.FC<OccasionGridProps> = ({ onSelectOccasion }) => {
                     justifyContent: 'center',
                     boxShadow: '0 4px 16px rgba(99, 102, 241, 0.3)',
                 }}>
-                    <Sparkles size={18} color="#fff" strokeWidth={2.5} />
+                    <Sparkles size={16} color="#fff" strokeWidth={2.5} />
                 </div>
                 <div>
                     <h2 style={{
-                        fontSize: '24px',
+                        fontSize: '20px',
                         fontWeight: 700,
                         margin: 0,
                         fontFamily: 'var(--font-display)',
-                        letterSpacing: '-0.03em',
+                        letterSpacing: '-0.02em',
                         color: '#e2e8f0',
                     }}>
                         Style Studio
                     </h2>
-                    <p style={{
-                        margin: '2px 0 0 0',
-                        fontSize: '13px',
-                        color: '#475569',
-                        fontWeight: 500,
-                    }}>
-                        Pick an occasion, get outfit ideas
-                    </p>
                 </div>
             </div>
 
-            {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                {occasions.map((occasion, index) => (
-                    <OccasionCard
-                        key={occasion.value}
-                        title={occasion.title}
-                        image={occasion.image}
-                        color={occasion.color}
-                        gradientFrom={occasion.gradientFrom}
-                        gradientTo={occasion.gradientTo}
-                        count={counts[occasion.value]}
-                        onClick={() => onSelectOccasion(occasion.value)}
-                        index={index}
-                        featured={occasion.value === featuredValue}
-                    />
-                ))}
+            {/* Bento Grid */}
+            <div className="grid grid-cols-2 gap-4 pb-4">
+                {occasions.map((occasion, index) => {
+                    // Bento Logic:
+                    // Index 0, 1: Top row (standard)
+                    // Index 2: Tall item (left col, span 2 rows)
+                    // Index 3: Middle right (standard)
+                    // Index 4: Bottom right (standard)
+
+                    let gridClass = "min-h-[160px]";
+                    if (index === 2) gridClass = "row-span-2 min-h-[336px]"; // Tall item
+
+                    return (
+                        <OccasionCard
+                            key={occasion.value}
+                            title={occasion.title}
+                            image={occasion.image}
+                            color={occasion.color}
+                            gradientFrom={occasion.gradientFrom}
+                            gradientTo={occasion.gradientTo}
+                            count={counts[occasion.value]}
+                            onClick={() => onSelectOccasion(occasion.value)}
+                            index={index}
+                            className={gridClass}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
 };
 
 export { OccasionGrid, OccasionCard };
+
