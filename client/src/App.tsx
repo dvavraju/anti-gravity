@@ -385,7 +385,8 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-base)] text-[var(--color-base-foreground)] pb-24 md:pb-20">
+    <div className="min-h-screen bg-[var(--color-base)] text-[var(--color-base-foreground)] pb-24 md:pb-20 overflow-x-hidden">
+
       <Container>
         {activeTab === 'home' && (
           <div className="py-6 space-y-10">
