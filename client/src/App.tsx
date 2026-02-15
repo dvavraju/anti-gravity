@@ -39,7 +39,7 @@ function App() {
 
   const fetchWardrobe = async () => {
     try {
-      const res = await fetch('http://localhost:3001/wardrobe');
+      const res = await fetch('/wardrobe');
       const data = await res.json();
       if (data.data) {
         setWardrobeItems(data.data);
@@ -53,8 +53,8 @@ function App() {
     setIsLoadingOutfit(true);
     try {
       const url = occasion
-        ? `http://localhost:3001/recommendations?occasion=${occasion}`
-        : 'http://localhost:3001/recommendations';
+        ? `/recommendations?occasion=${occasion}`
+        : '/recommendations';
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
@@ -82,7 +82,7 @@ function App() {
     try {
       await Promise.all(
         currentOutfit.items.map(item =>
-          fetch(`http://localhost:3001/wardrobe/${item.id}/wear`, { method: 'POST' })
+          fetch(`/wardrobe/${item.id}/wear`, { method: 'POST' })
         )
       );
       await fetchWardrobe();
@@ -137,7 +137,7 @@ function App() {
 
       try {
         // Analyze item with Gemini
-        const res = await fetch('http://localhost:3001/api/analyze-item', {
+        const res = await fetch('/api/analyze-item', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageUrl: base64String })
@@ -150,7 +150,7 @@ function App() {
         setAnalysisResult(item);
 
         // Fetch pairing suggestions
-        const pairingsRes = await fetch('http://localhost:3001/api/suggest-pairings', {
+        const pairingsRes = await fetch('/api/suggest-pairings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ newItem: item })
@@ -175,7 +175,7 @@ function App() {
     if (!analysisResult || !uploadedImage) return;
 
     try {
-      const res = await fetch('http://localhost:3001/wardrobe', {
+      const res = await fetch('/wardrobe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -217,7 +217,7 @@ function App() {
 
   const handleItemUpdate = async (updatedItem: WardrobeItem) => {
     try {
-      const res = await fetch(`http://localhost:3001/wardrobe/${updatedItem.id}`, {
+      const res = await fetch(`/wardrobe/${updatedItem.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedItem)
@@ -236,7 +236,7 @@ function App() {
 
   const handleItemDelete = async (itemId: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/wardrobe/${itemId}`, {
+      const res = await fetch(`/wardrobe/${itemId}`, {
         method: 'DELETE'
       });
 

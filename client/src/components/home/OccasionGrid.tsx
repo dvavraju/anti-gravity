@@ -153,7 +153,7 @@ const OccasionGrid: React.FC<OccasionGridProps> = ({ onSelectOccasion }) => {
     const [counts, setCounts] = React.useState<Record<string, number>>({});
 
     React.useEffect(() => {
-        fetch('http://localhost:3001/api/wardrobe-analysis')
+        fetch('/api/wardrobe-analysis')
             .then(res => res.json())
             .then(data => {
                 if (data.data) {

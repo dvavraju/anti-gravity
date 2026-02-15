@@ -35,7 +35,7 @@ export default function ItemDetailsModal({ item, onClose, onUpdate, onDelete }: 
     const [loadingPairings, setLoadingPairings] = useState(true);
 
     useEffect(() => {
-        fetch('http://localhost:3001/api/suggest-pairings', {
+        fetch('/api/suggest-pairings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ item })

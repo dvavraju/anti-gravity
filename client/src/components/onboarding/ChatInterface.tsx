@@ -80,7 +80,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onComplete }) => {
             setIsLoading(true);
 
             try {
-                const res = await fetch('http://localhost:3001/api/analyze-item', {
+                const res = await fetch('/api/analyze-item', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ imageUrl: base64String })
@@ -91,7 +91,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onComplete }) => {
 
                 const item = data.data;
 
-                const pairingsRes = await fetch('http://localhost:3001/api/suggest-pairings', {
+                const pairingsRes = await fetch('/api/suggest-pairings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ newItem: item })
@@ -134,7 +134,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onComplete }) => {
     const handleConfirmItem = async (itemData: Partial<WardrobeItem>) => {
         setIsLoading(true);
         try {
-            const res = await fetch('http://localhost:3001/wardrobe', {
+            const res = await fetch('/wardrobe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(itemData)
