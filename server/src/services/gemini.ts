@@ -164,13 +164,10 @@ export async function suggestPairings(newItem: ItemAnalysis, existingItems: any[
         Here are their existing wardrobe items:
         ${existingItems.map(i => `- ${i.name} (${i.category}, ${i.color}, ${i.occasion})`).join('\n')}
         
-        Suggest which existing items would pair well with the new item based on:
-        1. Color coordination
-        2. Style compatibility
-        3. Occasion matching
+        Suggest the SINGLE best matching item from each category to complete the look.
         
-        Return ONLY a JSON object with arrays of item names:
-        { "tops": ["item1", "item2"], "bottoms": ["item3"], "shoes": ["item4"] }
+        Return ONLY a JSON object with arrays containing AT MOST ONE item name per category:
+        { "tops": ["best_top"], "bottoms": ["best_bottom"], "shoes": ["best_shoes"] }
         
         Only suggest items from different categories than the new item.
         `;
@@ -184,9 +181,9 @@ export async function suggestPairings(newItem: ItemAnalysis, existingItems: any[
 
         // Map names back to full items
         return {
-            tops: existingItems.filter(i => suggestions.tops?.includes(i.name)),
-            bottoms: existingItems.filter(i => suggestions.bottoms?.includes(i.name)),
-            shoes: existingItems.filter(i => suggestions.shoes?.includes(i.name))
+            tops: existingItems.filter(i => suggestions.tops?.includes(i.name)).slice(0, 1),
+            bottoms: existingItems.filter(i => suggestions.bottoms?.includes(i.name)).slice(0, 1),
+            shoes: existingItems.filter(i => suggestions.shoes?.includes(i.name)).slice(0, 1)
         };
     } catch (error) {
         console.error("Gemini Pairing Error, using fallback logic:", error);
@@ -213,19 +210,19 @@ export async function suggestPairings(newItem: ItemAnalysis, existingItems: any[
         if (newItem.category !== 'top') {
             result.tops = matchingOccasion
                 .filter(i => i.category === 'top' && compatibleColors.includes(i.color?.toLowerCase()))
-                .slice(0, 2);
+                .slice(0, 1);
         }
 
         if (newItem.category !== 'bottom') {
             result.bottoms = matchingOccasion
                 .filter(i => i.category === 'bottom' && compatibleColors.includes(i.color?.toLowerCase()))
-                .slice(0, 2);
+                .slice(0, 1);
         }
 
         if (newItem.category !== 'shoes') {
             result.shoes = matchingOccasion
                 .filter(i => i.category === 'shoes' && compatibleColors.includes(i.color?.toLowerCase()))
-                .slice(0, 2);
+                .slice(0, 1);
         }
 
         return result;
