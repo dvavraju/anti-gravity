@@ -238,6 +238,18 @@ app.get('/recommendations', (req: Request, res: Response) => {
 // -----------------------------------------------------------------------------
 
 import { analyzeClothingItem, analyzeWardrobe, suggestPairings } from './services/gemini';
+import { seedDatabase } from './scripts/seed-demo';
+
+// POST /api/debug/seed - Populate database with demo data
+app.post('/api/debug/seed', async (req: Request, res: Response) => {
+    try {
+        await seedDatabase();
+        res.json({ message: 'Database seeded with demo data!' });
+    } catch (error) {
+        console.error("Seeding failed:", error);
+        res.status(500).json({ error: 'Failed to seed database' });
+    }
+});
 
 // POST /api/analyze-item - Analyze clothing item with AI
 app.post('/api/analyze-item', async (req: Request, res: Response) => {
