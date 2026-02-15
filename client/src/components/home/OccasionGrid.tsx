@@ -1,9 +1,9 @@
 import * as React from "react"
-import { Shirt, Coffee, Users, Briefcase, Dumbbell, ArrowRight, Sparkles } from "lucide-react"
+import { ArrowRight, Sparkles } from "lucide-react"
 
 interface OccasionCardProps {
     title: string;
-    icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+    image: string;
     color: string;
     gradientFrom: string;
     gradientTo: string;
@@ -13,7 +13,7 @@ interface OccasionCardProps {
     featured?: boolean;
 }
 
-const OccasionCard: React.FC<OccasionCardProps> = ({ title, icon: Icon, color, gradientFrom, gradientTo, count, onClick, index, featured }) => {
+const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradientFrom, gradientTo, count, onClick, index, featured }) => {
     const [hovered, setHovered] = React.useState(false);
 
     return (
@@ -65,18 +65,26 @@ const OccasionCard: React.FC<OccasionCardProps> = ({ title, icon: Icon, color, g
                 marginBottom: '16px',
             }}>
                 <div style={{
-                    width: featured ? '52px' : '44px',
-                    height: featured ? '52px' : '44px',
-                    borderRadius: '14px',
-                    background: `linear-gradient(135deg, ${gradientFrom}25, ${gradientTo}15)`,
-                    border: `1px solid ${color}20`,
+                    width: featured ? '80px' : '64px',
+                    height: featured ? '80px' : '64px',
+                    borderRadius: '16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    transition: 'all 0.4s ease',
-                    transform: hovered ? 'scale(1.08)' : 'scale(1)',
+                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    transform: hovered ? 'scale(1.15) rotate(3deg)' : 'scale(1)',
+                    filter: hovered ? 'drop-shadow(0 10px 20px rgba(0,0,0,0.3))' : 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
                 }}>
-                    <Icon size={featured ? 24 : 20} color={color} strokeWidth={2} />
+                    <img
+                        src={image}
+                        alt={title}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            filter: 'brightness(1.1)'
+                        }}
+                    />
                 </div>
 
                 {count !== undefined && count > 0 && (
@@ -167,12 +175,18 @@ interface OccasionGridProps {
     onSelectOccasion: (occasion: string) => void;
 }
 
+import iconFormal from '../../assets/3d/icon_formal.png';
+import iconCasual from '../../assets/3d/icon_casual.png';
+import iconFamily from '../../assets/3d/icon_family.png';
+import iconSport from '../../assets/3d/icon_sport.png';
+import iconInformal from '../../assets/3d/icon_informal.png';
+
 const occasions = [
-    { title: 'Formal', icon: Briefcase, color: '#818cf8', gradientFrom: '#6366f1', gradientTo: '#818cf8', value: 'formal' },
-    { title: 'Casual', icon: Coffee, color: '#34d399', gradientFrom: '#059669', gradientTo: '#34d399', value: 'casual' },
-    { title: 'Family', icon: Users, color: '#fb7185', gradientFrom: '#e11d48', gradientTo: '#fb7185', value: 'family' },
-    { title: 'Sport', icon: Dumbbell, color: '#fb923c', gradientFrom: '#ea580c', gradientTo: '#fb923c', value: 'sport' },
-    { title: 'Informal', icon: Shirt, color: '#c084fc', gradientFrom: '#7c3aed', gradientTo: '#c084fc', value: 'informal' },
+    { title: 'Formal', image: iconFormal, color: '#818cf8', gradientFrom: '#6366f1', gradientTo: '#818cf8', value: 'formal' },
+    { title: 'Casual', image: iconCasual, color: '#34d399', gradientFrom: '#059669', gradientTo: '#34d399', value: 'casual' },
+    { title: 'Family', image: iconFamily, color: '#fb7185', gradientFrom: '#e11d48', gradientTo: '#fb7185', value: 'family' },
+    { title: 'Sport', image: iconSport, color: '#fb923c', gradientFrom: '#ea580c', gradientTo: '#fb923c', value: 'sport' },
+    { title: 'Informal', image: iconInformal, color: '#c084fc', gradientFrom: '#7c3aed', gradientTo: '#c084fc', value: 'informal' },
 ];
 
 const OccasionGrid: React.FC<OccasionGridProps> = ({ onSelectOccasion }) => {
@@ -242,7 +256,7 @@ const OccasionGrid: React.FC<OccasionGridProps> = ({ onSelectOccasion }) => {
                     <OccasionCard
                         key={occasion.value}
                         title={occasion.title}
-                        icon={occasion.icon}
+                        image={occasion.image}
                         color={occasion.color}
                         gradientFrom={occasion.gradientFrom}
                         gradientTo={occasion.gradientTo}
