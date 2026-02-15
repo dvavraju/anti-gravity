@@ -28,9 +28,10 @@ const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradie
 
     // Special size for 'Informal' category
     const isInformal = title === 'Informal';
-    const iconSize = isInformal ? '185px' : '165px';
+    const iconSize = isInformal ? '175px' : '155px';
     const iconTop = isInformal ? '-45px' : '-40px';
     const iconRight = isInformal ? '-25px' : '-20px';
+
 
     return (
         <button
