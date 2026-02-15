@@ -116,10 +116,11 @@ interface OccasionGridProps {
 // Use new icons where available, fallback to old
 import iconFormal from '../../assets/3d/formal_new.png';
 import iconCasual from '../../assets/3d/casual_new.png';
+import iconFamily from '../../assets/3d/family_new.png';
 // Using old icons as placeholder for now, user can update later
-import iconFamily from '../../assets/3d/icon_family.png';
 import iconSport from '../../assets/3d/icon_sport.png';
 import iconInformal from '../../assets/3d/icon_informal.png';
+
 
 const occasions = [
     { title: 'Formal', image: iconFormal, color: '#818cf8', gradientFrom: '#6366f1', gradientTo: '#818cf8', value: 'formal' },
