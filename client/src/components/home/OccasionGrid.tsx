@@ -55,15 +55,16 @@ const OccasionCard: React.FC<OccasionCardProps> = ({ title, image, color, gradie
             {/* 3D Pop-out Icon */}
             <div style={{
                 position: 'absolute',
-                top: '-20px',
-                right: '-10px',
-                width: '100px',
-                height: '100px',
-                filter: hovered ? 'drop-shadow(0 15px 30px rgba(0,0,0,0.4))' : 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
-                transform: hovered ? 'scale(1.1) translateY(-5px) rotate(5deg)' : 'scale(1) rotate(0deg)',
+                top: '-30px',
+                right: '-15px',
+                width: '140px',
+                height: '140px',
+                filter: hovered ? 'drop-shadow(0 20px 40px rgba(0,0,0,0.45))' : 'drop-shadow(0 10px 20px rgba(0,0,0,0.35))',
+                transform: hovered ? 'scale(1.1) translateY(-8px) rotate(5deg)' : 'scale(1) rotate(0deg)',
                 transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy transition
                 zIndex: 10,
             }}>
+
                 <img
                     src={image}
                     alt={title}
