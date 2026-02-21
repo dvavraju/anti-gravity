@@ -83,10 +83,10 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                         <div
                                 style={{
                                         position: "absolute",
-                                        top: "-20px",
-                                        right: "-10px",
-                                        width: "100px",
-                                        height: "100px",
+                                        top: "-28px",
+                                        right: "-16px",
+                                        width: "130px",
+                                        height: "130px",
                                         filter: isActive
                                                 ? "drop-shadow(0 15px 30px rgba(0,0,0,0.4))"
                                                 : "drop-shadow(0 8px 16px rgba(0,0,0,0.3))",
