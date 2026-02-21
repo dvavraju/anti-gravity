@@ -10,7 +10,6 @@ interface OccasionCardProps {
         gradientTo: string;
         count?: number;
         onClick: () => void;
-        index: number;
         className?: string;
         disabled?: boolean;
         fullWidth?: boolean;
@@ -24,7 +23,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         gradientTo,
         count,
         onClick,
-        index,
         className,
         disabled,
         fullWidth,
