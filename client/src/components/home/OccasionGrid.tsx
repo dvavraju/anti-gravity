@@ -253,7 +253,6 @@ export const OccasionGrid: React.FC<OccasionGridProps> = ({
                                                 gradientTo={occasion.gradientTo}
                                                 count={count}
                                                 onClick={() => onSelectOccasion(occasion.value)}
-                                                index={index}
                                                 disabled={isDisabled}
                                                 fullWidth={isLast && isOdd}
                                         />
