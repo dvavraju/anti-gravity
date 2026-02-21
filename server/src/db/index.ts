@@ -7,7 +7,10 @@ let db: sqlite3.Database;
 
 export const initDB = (): Promise<void> => {
     return new Promise((resolve, reject) => {
-        db = new sqlite3.Database('./wardrobe.db', (err) => {
+       const dbPath = process.env.DB_PATH || './wardrobe.db';
+console.log(`Using database at: ${dbPath}`);
+db = new sqlite3.Database(dbPath, (err) => {
+
             if (err) {
                 console.error('Error opening database:', err.message);
                 reject(err);
