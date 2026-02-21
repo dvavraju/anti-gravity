@@ -1,7 +1,7 @@
 {
-  "name": "ai-wardrobe-root",
+  "name": "wardrobe-management",
   "version": "1.0.0",
-  "description": "Root package for AI Wardrobe App",
+  "description": "Wardrobe Management App",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "build": "npm run build --prefix client && npm run build --prefix server",
