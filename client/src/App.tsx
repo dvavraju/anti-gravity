@@ -460,39 +460,60 @@ function App() {
   return (
     <div className="min-h-screen bg-[var(--color-base)] text-[var(--color-base-foreground)] pb-24 md:pb-20 overflow-x-hidden">
 
+      {/* ─── Sticky Top Bar ─── */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        background: 'rgba(10,10,15,0.85)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        padding: '12px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: 32, height: 32,
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '14px',
+          }}>✨</div>
+          <div>
+            <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: 500, lineHeight: 1 }}>Wardrobe AI</p>
+            <p style={{ margin: 0, fontSize: '14px', color: '#e2e8f0', fontWeight: 700, lineHeight: 1.3, fontFamily: 'var(--font-display)' }}>
+              {userName}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          title="Log out"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '5px',
+            padding: '7px 13px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '9px',
+            color: '#64748b',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 600,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#fb7185'; e.currentTarget.style.borderColor = 'rgba(251,113,133,0.3)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+        >
+          <LogOut size={14} />
+          Log out
+        </button>
+      </div>
+
       <Container>
         {activeTab === 'home' && (
           <div className="py-6 space-y-10">
-            {/* User header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '-16px' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: '13px', color: '#64748b', fontWeight: 500 }}>Welcome back</p>
-                <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#e2e8f0', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
-                  {userName} ✨
-                </h2>
-              </div>
-              <button
-                onClick={handleLogout}
-                title="Log out"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '8px 14px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '10px',
-                  color: '#64748b',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fb7185'; e.currentTarget.style.borderColor = 'rgba(251,113,133,0.3)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
-              >
-                <LogOut size={15} />
-                Log out
-              </button>
-            </div>
 
             <OccasionGrid onSelectOccasion={handleSelectOccasion} wardrobeItems={wardrobeItems} />
 

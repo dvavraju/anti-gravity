@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'wardrobe-dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'my-super-secret-key-2024-wardrobe';
 
 // Extend Express Request to carry userId
 declare global {
