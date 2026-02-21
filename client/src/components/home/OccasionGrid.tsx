@@ -1,6 +1,11 @@
 import * as React from "react";
 import { Sparkles } from "lucide-react";
 import type { WardrobeItem } from "../../types/wardrobe";
+import iconFormal from "../../assets/3d/icon_formal.png";
+import iconCasual from "../../assets/3d/icon_casual.png";
+import iconFamily from "../../assets/3d/icon_family.png";
+import iconSport from "../../assets/3d/icon_sport.png";
+import iconInformal from "../../assets/3d/icon_informal.png";
 
 interface OccasionCardProps {
         title: string;
@@ -38,11 +43,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         }, []);
 
         const isActive = !disabled && (hovered || isMobile);
-
-        const isInformal = title === "Informal";
-        const iconSize = isInformal ? "175px" : "155px";
-        const iconTop = isInformal ? "-45px" : "-40px";
-        const iconRight = isInformal ? "-25px" : "-20px";
 
         const borderColor = disabled
                 ? "rgba(255, 255, 255, 0.03)"
@@ -87,32 +87,38 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                         className={className}
                         disabled={disabled}
                 >
-                        {/* Icon */}
+                        {/* 3D Icon */}
                         <div
                                 style={{
                                         position: "absolute",
-                                        top: iconTop,
-                                        right: iconRight,
-                                        width: iconSize,
-                                        height: iconSize,
+                                        top: "-40px",
+                                        right: "-20px",
+                                        width: "155px",
+                                        height: "155px",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
-                                        fontSize: isInformal ? "130px" : "115px",
-                                        opacity: disabled ? 0.15 : isActive ? 0.9 : 0.5,
+                                        opacity: disabled ? 0.15 : isActive ? 1 : 0.6,
                                         transition: "all 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
-                                        transform: isActive ? "scale(1.1) rotate(-5deg)" : "scale(1) rotate(0deg)",
+                                        transform: isActive ? "scale(1.12) rotate(-5deg)" : "scale(1) rotate(0deg)",
                                         filter: disabled
                                                 ? "grayscale(1)"
                                                 : isActive
-                                                        ? "drop-shadow(0 8px 20px rgba(0,0,0,0.3))"
-                                                        : "none",
+                                                        ? "drop-shadow(0 8px 20px rgba(0,0,0,0.4))"
+                                                        : "drop-shadow(0 4px 8px rgba(0,0,0,0.2))",
                                         pointerEvents: "none",
                                         zIndex: 1,
-                                        userSelect: "none",
                                 }}
                         >
-                                {image}
+                                <img
+                                        src={image}
+                                        alt={title}
+                                        style={{
+                                                width: "100%",
+                                                height: "100%",
+                                                objectFit: "contain",
+                                        }}
+                                />
                         </div>
 
                         {/* Content */}
@@ -170,42 +176,42 @@ const occasions = [
         {
                 title: "Formal",
                 value: "formal",
-                image: "🤵",
-                color: "#6366f1",
+                image: iconFormal,
+                color: "#818cf8",
                 gradientFrom: "#6366f1",
-                gradientTo: "#8b5cf6",
+                gradientTo: "#818cf8",
         },
         {
                 title: "Casual",
                 value: "casual",
-                image: "👕",
-                color: "#22c55e",
-                gradientFrom: "#22c55e",
-                gradientTo: "#16a34a",
+                image: iconCasual,
+                color: "#34d399",
+                gradientFrom: "#059669",
+                gradientTo: "#34d399",
         },
         {
                 title: "Family",
                 value: "family",
-                image: "🏠",
-                color: "#f59e0b",
-                gradientFrom: "#f59e0b",
-                gradientTo: "#d97706",
+                image: iconFamily,
+                color: "#fb7185",
+                gradientFrom: "#e11d48",
+                gradientTo: "#fb7185",
         },
         {
                 title: "Sport",
                 value: "sport",
-                image: "⚽",
-                color: "#ef4444",
-                gradientFrom: "#ef4444",
-                gradientTo: "#dc2626",
+                image: iconSport,
+                color: "#fb923c",
+                gradientFrom: "#ea580c",
+                gradientTo: "#fb923c",
         },
         {
                 title: "Informal",
                 value: "informal",
-                image: "😎",
-                color: "#06b6d4",
-                gradientFrom: "#06b6d4",
-                gradientTo: "#0891b2",
+                image: iconInformal,
+                color: "#c084fc",
+                gradientFrom: "#7c3aed",
+                gradientTo: "#c084fc",
         },
 ];
 
