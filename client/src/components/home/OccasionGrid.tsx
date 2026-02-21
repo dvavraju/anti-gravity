@@ -1,11 +1,11 @@
 import * as React from "react";
 import { Sparkles } from "lucide-react";
 import type { WardrobeItem } from "../../types/wardrobe";
-import iconFormal from "../../assets/3d/icon_formal.png";
-import iconCasual from "../../assets/3d/icon_casual.png";
-import iconFamily from "../../assets/3d/icon_family.png";
-import iconSport from "../../assets/3d/icon_sport.png";
-import iconInformal from "../../assets/3d/icon_informal.png";
+import iconFormal from "../../assets/3d/formal_new.png";
+import iconCasual from "../../assets/3d/casual_new.png";
+import iconFamily from "../../assets/3d/family_new.png";
+import iconSport from "../../assets/3d/sport_new.png";
+import iconInformal from "../../assets/3d/informal_new.png";
 
 interface OccasionCardProps {
         title: string;
