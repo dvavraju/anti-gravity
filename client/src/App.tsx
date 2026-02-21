@@ -126,6 +126,7 @@ function App() {
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isAnalyzing) return; // Bug fix: prevent duplicate triggers
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -390,7 +391,7 @@ function App() {
       <Container>
         {activeTab === 'home' && (
           <div className="py-6 space-y-10">
-            <OccasionGrid onSelectOccasion={handleSelectOccasion} />
+                        <OccasionGrid onSelectOccasion={handleSelectOccasion} wardrobeItems={wardrobeItems} />
 
             {/* Wardrobe Preview Section */}
             <div>
