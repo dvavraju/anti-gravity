@@ -16,8 +16,6 @@ interface OccasionCardProps {
         count?: number;
         onClick: () => void;
         className?: string;
-        disabled?: boolean;
-        fullWidth?: boolean;
 }
 
 const OccasionCard: React.FC<OccasionCardProps> = ({
@@ -29,8 +27,6 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
         count,
         onClick,
         className,
-        disabled,
-        fullWidth,
 }) => {
         const [hovered, setHovered] = React.useState(false);
         const [isMobile, setIsMobile] = React.useState(false);
@@ -42,28 +38,12 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                 return () => window.removeEventListener("resize", checkMobile);
         }, []);
 
-        const isActive = !disabled && (hovered || isMobile);
-
-        const borderColor = disabled
-                ? "rgba(255, 255, 255, 0.03)"
-                : isActive
-                        ? `${color}35`
-                        : "rgba(255, 255, 255, 0.05)";
-
-        const boxShadow = isActive
-                ? `0 20px 50px ${color}15, 0 0 80px ${color}08`
-                : "none";
-
-        const background = disabled
-                ? "rgba(255, 255, 255, 0.01)"
-                : isActive
-                        ? `linear-gradient(160deg, ${gradientFrom}18, ${gradientTo}10, rgba(255,255,255,0.02))`
-                        : "rgba(255, 255, 255, 0.02)";
+        const isActive = hovered || isMobile;
 
         return (
                 <button
-                        onClick={disabled ? undefined : onClick}
-                        onMouseEnter={() => !disabled && setHovered(true)}
+                        onClick={onClick}
+                        onMouseEnter={() => setHovered(true)}
                         onMouseLeave={() => setHovered(false)}
                         style={{
                                 position: "relative",
@@ -71,98 +51,93 @@ const OccasionCard: React.FC<OccasionCardProps> = ({
                                 flexDirection: "column",
                                 justifyContent: "flex-end",
                                 padding: "16px",
-                                background,
-                                border: `1px solid ${borderColor}`,
+                                background: isActive
+                                        ? `linear-gradient(160deg, ${gradientFrom}18, ${gradientTo}10, rgba(255,255,255,0.02))`
+                                        : "rgba(255, 255, 255, 0.02)",
+                                border: `1px solid ${isActive ? `${color}35` : "rgba(255, 255, 255, 0.05)"}`,
                                 borderRadius: "24px",
-                                cursor: disabled ? "not-allowed" : "pointer",
+                                cursor: "pointer",
                                 transition: "all 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
                                 textAlign: "left",
                                 transform: isActive ? "translateY(-4px)" : "translateY(0)",
-                                boxShadow,
+                                boxShadow: isActive
+                                        ? `0 20px 50px ${color}15, 0 0 80px ${color}08`
+                                        : "none",
                                 overflow: "visible",
-                                opacity: disabled ? 0.4 : 1,
-                                gridColumn: fullWidth ? "1 / -1" : undefined,
-                                minHeight: "150px",
                         }}
-                        className={className}
-                        disabled={disabled}
+                        className={`animate-slide-up ${className || ""}`}
                 >
-                        {/* 3D Icon */}
+                        {/* Gradient Background Blob */}
                         <div
                                 style={{
                                         position: "absolute",
-                                        top: "-40px",
-                                        right: "-20px",
-                                        width: "155px",
-                                        height: "155px",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        opacity: disabled ? 0.15 : isActive ? 1 : 0.6,
-                                        transition: "all 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
-                                        transform: isActive ? "scale(1.12) rotate(-5deg)" : "scale(1) rotate(0deg)",
-                                        filter: disabled
-                                                ? "grayscale(1)"
-                                                : isActive
-                                                        ? "drop-shadow(0 8px 20px rgba(0,0,0,0.4))"
-                                                        : "drop-shadow(0 4px 8px rgba(0,0,0,0.2))",
+                                        inset: 0,
+                                        borderRadius: "24px",
+                                        background: `radial-gradient(circle at top right, ${color}15, transparent 70%)`,
+                                        opacity: isActive ? 1 : 0.5,
+                                        transition: "opacity 0.5s ease",
+                                }}
+                        />
+
+                        {/* 3D Pop-out Icon */}
+                        <div
+                                style={{
+                                        position: "absolute",
+                                        top: "-20px",
+                                        right: "-10px",
+                                        width: "100px",
+                                        height: "100px",
+                                        filter: isActive
+                                                ? "drop-shadow(0 15px 30px rgba(0,0,0,0.4))"
+                                                : "drop-shadow(0 8px 16px rgba(0,0,0,0.3))",
+                                        transform: isActive
+                                                ? "scale(1.1) translateY(-5px) rotate(5deg)"
+                                                : "scale(1) rotate(0deg)",
+                                        transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                                        zIndex: 10,
                                         pointerEvents: "none",
-                                        zIndex: 1,
                                 }}
                         >
                                 <img
                                         src={image}
                                         alt={title}
-                                        style={{
-                                                width: "100%",
-                                                height: "100%",
-                                                objectFit: "contain",
-                                        }}
+                                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
                                 />
                         </div>
 
-                        {/* Content */}
-                        <div style={{ position: "relative", zIndex: 2 }}>
-                                {/* Badge */}
-                                <div
-                                        style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: "4px",
-                                                padding: "3px 8px",
-                                                borderRadius: "8px",
-                                                background: disabled ? "rgba(255,255,255,0.04)" : `${color}18`,
-                                                marginBottom: "6px",
-                                        }}
-                                >
-                                        <Sparkles size={10} color={disabled ? "#888" : color} />
-                                        <span
-                                                style={{
-                                                        fontSize: "11px",
-                                                        fontWeight: 600,
-                                                        color: disabled ? "#888" : color,
-                                                        letterSpacing: "0.5px",
-                                                        textTransform: "uppercase",
-                                                }}
-                                        >
-                                                {disabled
-                                                        ? "No outfits"
-                                                        : `${count ?? 0} outfit${(count ?? 0) !== 1 ? "s" : ""}`}
-                                        </span>
-                                </div>
-
-                                {/* Title */}
-                                <div
-                                        style={{
-                                                fontSize: "15px",
-                                                fontWeight: 700,
-                                                color: disabled ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.92)",
-                                                letterSpacing: "-0.3px",
-                                        }}
-                                >
-                                        {title}
-                                </div>
+                        {/* Count Badge (top-left) */}
+                        <div
+                                style={{
+                                        position: "absolute",
+                                        top: "16px",
+                                        left: "16px",
+                                        background: "rgba(23, 23, 30, 0.6)",
+                                        backdropFilter: "blur(4px)",
+                                        padding: "4px 10px",
+                                        borderRadius: "99px",
+                                        border: "1px solid rgba(255,255,255,0.08)",
+                                        zIndex: 5,
+                                }}
+                        >
+                                <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 600 }}>
+                                        {count || 0}
+                                </span>
                         </div>
+
+                        {/* Title */}
+                        <h3
+                                style={{
+                                        fontSize: "18px",
+                                        fontWeight: 700,
+                                        color: "#e2e8f0",
+                                        margin: "36px 0 0 0",
+                                        letterSpacing: "-0.02em",
+                                        zIndex: 5,
+                                        position: "relative",
+                                }}
+                        >
+                                {title}
+                        </h3>
                 </button>
         );
 };
@@ -226,44 +201,81 @@ export const OccasionGrid: React.FC<OccasionGridProps> = ({
                                 (item) => item.occasion?.toLowerCase() === occasion.value
                         );
                         const tops = occasionItems.filter((i) => i.category === "top").length;
-                        const bottoms = occasionItems.filter((i) => i.category === "bottom").length;
+                        const bottoms = occasionItems.filter(
+                                (i) => i.category === "bottom"
+                        ).length;
                         const shoes = occasionItems.filter((i) => i.category === "shoes").length;
                         result[occasion.value] = tops * bottoms * shoes;
                 }
                 return result;
         }, [wardrobeItems]);
 
-        const isOdd = occasions.length % 2 !== 0;
-
         return (
-                <div
-                        style={{
-                                display: "grid",
-                                gridTemplateColumns: "repeat(2, 1fr)",
-                                gap: "12px",
-                                padding: "0 0 12px 0",
-                        }}
-                >
-                        {occasions.map((occasion, index) => {
-                                const count = counts[occasion.value] ?? 0;
-                                const isDisabled = count === 0;
-                                const isLast = index === occasions.length - 1;
+                <div style={{ padding: "8px 0" }}>
+                        {/* Section Header */}
+                        <div
+                                style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "12px",
+                                        marginBottom: "24px",
+                                        paddingLeft: "4px",
+                                }}
+                        >
+                                <div
+                                        style={{
+                                                width: "32px",
+                                                height: "32px",
+                                                borderRadius: "10px",
+                                                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                boxShadow: "0 4px 16px rgba(99, 102, 241, 0.3)",
+                                        }}
+                                >
+                                        <Sparkles size={16} color="#fff" strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                        <h2
+                                                style={{
+                                                        fontSize: "20px",
+                                                        fontWeight: 700,
+                                                        margin: 0,
+                                                        letterSpacing: "-0.02em",
+                                                        color: "#e2e8f0",
+                                                }}
+                                        >
+                                                Style Studio
+                                        </h2>
+                                </div>
+                        </div>
 
-                                return (
-                                        <OccasionCard
-                                                key={occasion.value}
-                                                title={occasion.title}
-                                                image={occasion.image}
-                                                color={occasion.color}
-                                                gradientFrom={occasion.gradientFrom}
-                                                gradientTo={occasion.gradientTo}
-                                                count={count}
-                                                onClick={() => onSelectOccasion(occasion.value)}
-                                                disabled={isDisabled}
-                                                fullWidth={isLast && isOdd}
-                                        />
-                                );
-                        })}
+                        {/* Bento Grid */}
+                        <div className="grid grid-cols-2 gap-4 pb-4">
+                                {occasions.map((occasion, index) => {
+                                        // Bento layout:
+                                        // index 0, 1 → top row (standard height)
+                                        // index 2 → Family: tall, spans 2 rows on left
+                                        // index 3, 4 → Sport + Informal stacked on right
+                                        let gridClass = "min-h-[160px]";
+                                        if (index === 2) gridClass = "row-span-2 min-h-[336px]";
+
+                                        return (
+                                                <OccasionCard
+                                                        key={occasion.value}
+                                                        title={occasion.title}
+                                                        image={occasion.image}
+                                                        color={occasion.color}
+                                                        gradientFrom={occasion.gradientFrom}
+                                                        gradientTo={occasion.gradientTo}
+                                                        count={counts[occasion.value]}
+                                                        onClick={() => onSelectOccasion(occasion.value)}
+                                                        className={gridClass}
+                                                />
+                                        );
+                                })}
+                        </div>
                 </div>
         );
 };
