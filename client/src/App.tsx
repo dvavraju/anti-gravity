@@ -7,13 +7,20 @@ import type { Outfit } from "./types/wardrobe";
 import { OutfitCard } from "./components/wardrobe/OutfitCard";
 import { BottomNav } from "./components/layout/BottomNav";
 import { OccasionGrid } from "./components/home/OccasionGrid";
-import { ArrowLeft, Plus, MessageCircle } from "lucide-react";
+import { ArrowLeft, Plus, MessageCircle, LogOut } from "lucide-react";
 import ItemDetailsModal from './components/wardrobe/ItemDetailsModal';
+import { AuthScreen } from "./components/auth/AuthScreen";
 
 type AppPhase = 'onboarding' | 'dashboard';
 type ActiveTab = 'home' | 'wardrobe';
 
 function App() {
+  // ─── Auth state ───────────────────────────────────────────────────
+  const [authToken, setAuthToken] = React.useState<string | null>(null);
+  const [userName, setUserName] = React.useState<string>('');
+  const [authChecked, setAuthChecked] = React.useState(false);
+
+  // ─── App state ────────────────────────────────────────────────────
   const [phase, setPhase] = React.useState<AppPhase>('dashboard');
   const [activeTab, setActiveTab] = React.useState<ActiveTab>('home');
   const [selectedOccasion, setSelectedOccasion] = React.useState<string | null>(null);
@@ -32,14 +39,70 @@ function App() {
   const [pairingSuggestions, setPairingSuggestions] = React.useState<{ tops: WardrobeItem[], bottoms: WardrobeItem[], shoes: WardrobeItem[] } | null>(null);
   const [uploadedImage, setUploadedImage] = React.useState<string | null>(null);
 
-
-  React.useEffect(() => {
-    fetchWardrobe();
+  // ─── Token helpers ────────────────────────────────────────────────
+  const authFetch = React.useCallback((url: string, options: RequestInit = {}) => {
+    const token = localStorage.getItem('wm_token');
+    return fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
   }, []);
+
+  const handleAuth = (token: string, name: string) => {
+    localStorage.setItem('wm_token', token);
+    localStorage.setItem('wm_user', name);
+    setAuthToken(token);
+    setUserName(name);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('wm_token');
+    localStorage.removeItem('wm_user');
+    setAuthToken(null);
+    setUserName('');
+    setWardrobeItems([]);
+    setCurrentOutfit(null);
+    setOutfitHistory([]);
+    setSelectedOccasion(null);
+  };
+
+  // ─── On mount: check for existing token ──────────────────────────
+  React.useEffect(() => {
+    const storedToken = localStorage.getItem('wm_token');
+    const storedUser = localStorage.getItem('wm_user');
+    if (storedToken && storedUser) {
+      // Validate token with server
+      fetch('/auth/me', {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      })
+        .then(res => {
+          if (res.ok) {
+            setAuthToken(storedToken);
+            setUserName(storedUser);
+          } else {
+            localStorage.removeItem('wm_token');
+            localStorage.removeItem('wm_user');
+          }
+        })
+        .catch(() => { /* network error — still show auth screen */ })
+        .finally(() => setAuthChecked(true));
+    } else {
+      setAuthChecked(true);
+    }
+  }, []);
+
+  // Fetch wardrobe after auth is confirmed
+  React.useEffect(() => {
+    if (authToken) fetchWardrobe();
+  }, [authToken]);
 
   const fetchWardrobe = async () => {
     try {
-      const res = await fetch('/wardrobe');
+      const res = await authFetch('/wardrobe');
       const data = await res.json();
       if (data.data) {
         setWardrobeItems(data.data);
@@ -55,7 +118,7 @@ function App() {
       const url = occasion
         ? `/recommendations?occasion=${occasion}`
         : '/recommendations';
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       if (data.data) {
@@ -82,7 +145,7 @@ function App() {
     try {
       await Promise.all(
         currentOutfit.items.map(item =>
-          fetch(`/wardrobe/${item.id}/wear`, { method: 'POST' })
+          authFetch(`/wardrobe/${item.id}/wear`, { method: 'POST' })
         )
       );
       await fetchWardrobe();
@@ -138,9 +201,8 @@ function App() {
 
       try {
         // Analyze item with Gemini
-        const res = await fetch('/api/analyze-item', {
+        const res = await authFetch('/api/analyze-item', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageUrl: base64String })
         });
 
@@ -151,9 +213,8 @@ function App() {
         setAnalysisResult(item);
 
         // Fetch pairing suggestions
-        const pairingsRes = await fetch('/api/suggest-pairings', {
+        const pairingsRes = await authFetch('/api/suggest-pairings', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ newItem: item })
         });
 
@@ -176,9 +237,8 @@ function App() {
     if (!analysisResult || !uploadedImage) return;
 
     try {
-      const res = await fetch('/wardrobe', {
+      const res = await authFetch('/wardrobe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: analysisResult.name,
           category: analysisResult.category,
@@ -218,9 +278,8 @@ function App() {
 
   const handleItemUpdate = async (updatedItem: WardrobeItem) => {
     try {
-      const res = await fetch(`/wardrobe/${updatedItem.id}`, {
+      const res = await authFetch(`/wardrobe/${updatedItem.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedItem)
       });
 
@@ -237,7 +296,7 @@ function App() {
 
   const handleItemDelete = async (itemId: string) => {
     try {
-      const res = await fetch(`/wardrobe/${itemId}`, {
+      const res = await authFetch(`/wardrobe/${itemId}`, {
         method: 'DELETE'
       });
 
@@ -252,6 +311,19 @@ function App() {
     }
   };
 
+
+  // Auth gate — show loading spinner until we know auth state
+  if (!authChecked) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, border: '3px solid rgba(139,92,246,0.3)', borderTopColor: '#8b5cf6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      </div>
+    );
+  }
+
+  if (!authToken) {
+    return <AuthScreen onAuth={handleAuth} />;
+  }
 
   if (phase === 'onboarding' || showChat) {
     return (
@@ -391,7 +463,38 @@ function App() {
       <Container>
         {activeTab === 'home' && (
           <div className="py-6 space-y-10">
-                        <OccasionGrid onSelectOccasion={handleSelectOccasion} wardrobeItems={wardrobeItems} />
+            {/* User header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '-16px' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b', fontWeight: 500 }}>Welcome back</p>
+                <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#e2e8f0', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
+                  {userName} ✨
+                </h2>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Log out"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 14px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '10px',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fb7185'; e.currentTarget.style.borderColor = 'rgba(251,113,133,0.3)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+              >
+                <LogOut size={15} />
+                Log out
+              </button>
+            </div>
+
+            <OccasionGrid onSelectOccasion={handleSelectOccasion} wardrobeItems={wardrobeItems} />
 
             {/* Wardrobe Preview Section */}
             <div>

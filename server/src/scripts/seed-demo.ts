@@ -94,13 +94,13 @@ const IMAGES = {
 
 const ITEMS_PER_CATEGORY = 3; // 3 tops, 3 bottoms, 3 shoes = 9 items per cat
 
-export async function seedDatabase() {
+export async function seedDatabase(userId: string) {
     const db = getDB();
 
-    // 1. Clear existing items
-    console.log('Clearing existing wardrobe items...');
+    // 1. Clear existing items for this user
+    console.log('Clearing existing wardrobe items for user...');
     await new Promise<void>((resolve, reject) => {
-        db.run('DELETE FROM wardrobe_items', (err) => {
+        db.run('DELETE FROM wardrobe_items WHERE user_id = ?', [userId], (err) => {
             if (err) reject(err);
             else resolve();
         });
@@ -108,7 +108,7 @@ export async function seedDatabase() {
 
     console.log('Seeding new demo items...');
 
-    const stmt = db.prepare('INSERT INTO wardrobe_items (id, name, category, sub_category, color, image_url, occasion, wear_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const stmt = db.prepare('INSERT INTO wardrobe_items (id, user_id, name, category, sub_category, color, image_url, occasion, wear_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 
     const now = new Date().toISOString();
 
@@ -118,26 +118,26 @@ export async function seedDatabase() {
 
         // Add 3 Tops
         for (let i = 0; i < ITEMS_PER_CATEGORY; i++) {
-            const id = `demo_${category}_top_${i + 1}`;
+            const id = `demo_${category}_top_${i + 1}_${userId}`;
             const name = `${category.charAt(0).toUpperCase() + category.slice(1)} Top ${i + 1}`;
             const img = currentCatImages.top[i % 3];
-            stmt.run(id, name, 'top', 'shirt', 'mixed', img, category, 0, now);
+            stmt.run(id, userId, name, 'top', 'shirt', 'mixed', img, category, 0, now);
         }
 
         // Add 3 Bottoms
         for (let i = 0; i < ITEMS_PER_CATEGORY; i++) {
-            const id = `demo_${category}_bottom_${i + 1}`;
+            const id = `demo_${category}_bottom_${i + 1}_${userId}`;
             const name = `${category.charAt(0).toUpperCase() + category.slice(1)} Bottom ${i + 1}`;
             const img = currentCatImages.bottom[i % 3];
-            stmt.run(id, name, 'bottom', 'pants', 'mixed', img, category, 0, now);
+            stmt.run(id, userId, name, 'bottom', 'pants', 'mixed', img, category, 0, now);
         }
 
         // Add 3 Shoes
         for (let i = 0; i < ITEMS_PER_CATEGORY; i++) {
-            const id = `demo_${category}_shoe_${i + 1}`;
+            const id = `demo_${category}_shoe_${i + 1}_${userId}`;
             const name = `${category.charAt(0).toUpperCase() + category.slice(1)} Shoes ${i + 1}`;
             const img = currentCatImages.shoes[i % 3];
-            stmt.run(id, name, 'shoes', 'footwear', 'mixed', img, category, 0, now);
+            stmt.run(id, userId, name, 'shoes', 'footwear', 'mixed', img, category, 0, now);
         }
     }
 

@@ -1,12 +1,14 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { initDB, getDB } from './db/index';
+import { requireAuth } from './middleware/auth';
+import authRoutes from './routes/auth';
 
 const app = express();
 const port = 3001;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Increased limit for image uploads
+app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static files from client/dist
@@ -16,7 +18,10 @@ app.use(express.static(path.join(__dirname, '../../client/dist')));
 // Initialize Database
 initDB().catch(console.error);
 
-// Helper: map DB row (snake_case) to API response (camelCase)
+// ─── Auth Routes (public) ────────────────────────────────────────────────────
+app.use('/auth', authRoutes);
+
+// ─── Helper: map DB row to camelCase ─────────────────────────────────────────
 function mapRow(row: any) {
     return {
         id: row.id,
@@ -32,143 +37,119 @@ function mapRow(row: any) {
     };
 }
 
-// GET /wardrobe - List all items
-app.get('/wardrobe', (req: Request, res: Response) => {
+// ─── Wardrobe CRUD (protected) ────────────────────────────────────────────────
+
+// GET /wardrobe - List all items for current user
+app.get('/wardrobe', requireAuth, (req: Request, res: Response) => {
     const db = getDB();
-    db.all('SELECT * FROM wardrobe_items ORDER BY created_at DESC', [], (err, rows: any[]) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
+    db.all(
+        'SELECT * FROM wardrobe_items WHERE user_id = ? ORDER BY created_at DESC',
+        [req.userId],
+        (err, rows: any[]) => {
+            if (err) { res.status(500).json({ error: err.message }); return; }
+            res.json({ data: rows.map(mapRow) });
         }
-        res.json({ data: rows.map(mapRow) });
-    });
+    );
 });
 
 // POST /wardrobe - Create new item
-app.post('/wardrobe', (req: Request, res: Response) => {
+app.post('/wardrobe', requireAuth, (req: Request, res: Response) => {
     const { name, category, color, imageUrl, occasion } = req.body;
 
-    // Simple validation (can be replaced by Zod)
     if (!name || !category) {
         res.status(400).json({ error: 'Name and Category are required' });
         return;
     }
 
     const db = getDB();
-    const id = Date.now().toString(); // Simple ID generation for MVP
+    const id = Date.now().toString();
 
-    const sql = `INSERT INTO wardrobe_items (id, name, category, color, image_url, occasion) VALUES (?, ?, ?, ?, ?, ?)`;
-    const params = [id, name, category, color, imageUrl, occasion];
+    const sql = `INSERT INTO wardrobe_items (id, user_id, name, category, color, image_url, occasion) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const params = [id, req.userId, name, category, color, imageUrl, occasion];
 
     db.run(sql, params, function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+        if (err) { res.status(500).json({ error: err.message }); return; }
         res.status(201).json({
             data: { id, name, category, color, imageUrl, occasion, wear_count: 0 }
         });
     });
 });
 
-// PUT /wardrobe/:id - Update item
-app.put('/wardrobe/:id', (req: Request, res: Response) => {
+// PUT /wardrobe/:id - Update item (only owner can update)
+app.put('/wardrobe/:id', requireAuth, (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, category, subCategory, color, occasion } = req.body;
 
     const db = getDB();
     db.run(
-        `UPDATE wardrobe_items 
-         SET name = ?, category = ?, sub_category = ?, color = ?, occasion = ?
-         WHERE id = ?`,
-        [name, category, subCategory, color, occasion, id],
+        `UPDATE wardrobe_items SET name = ?, category = ?, sub_category = ?, color = ?, occasion = ?
+         WHERE id = ? AND user_id = ?`,
+        [name, category, subCategory, color, occasion, id, req.userId],
         function (err) {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
-            if (this.changes === 0) {
-                res.status(404).json({ error: 'Item not found' });
-                return;
-            }
+            if (err) { res.status(500).json({ error: err.message }); return; }
+            if (this.changes === 0) { res.status(404).json({ error: 'Item not found' }); return; }
             res.json({ success: true, id });
         }
     );
 });
 
-// DELETE /wardrobe/:id - Delete item
-app.delete('/wardrobe/:id', (req: Request, res: Response) => {
+// DELETE /wardrobe/:id - Delete item (only owner)
+app.delete('/wardrobe/:id', requireAuth, (req: Request, res: Response) => {
     const { id } = req.params;
     const db = getDB();
 
-    db.run('DELETE FROM wardrobe_items WHERE id = ?', [id], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+    db.run('DELETE FROM wardrobe_items WHERE id = ? AND user_id = ?', [id, req.userId], function (err) {
+        if (err) { res.status(500).json({ error: err.message }); return; }
         res.json({ message: 'Item deleted', id });
     });
 });
 
-// -----------------------------------------------------------------------------
-// Wear Logging
-// -----------------------------------------------------------------------------
+// ─── Wear Logging ─────────────────────────────────────────────────────────────
 
-// POST /wardrobe/:id/wear - Log wearing an item
-app.post('/wardrobe/:id/wear', (req: Request, res: Response) => {
+// POST /wardrobe/:id/wear
+app.post('/wardrobe/:id/wear', requireAuth, (req: Request, res: Response) => {
     const { id } = req.params;
     const db = getDB();
-    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const today = new Date().toISOString().slice(0, 10);
 
-    const sql = `UPDATE wardrobe_items SET wear_count = wear_count + 1, last_worn_date = ? WHERE id = ?`;
-    db.run(sql, [today, id], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
+    db.run(
+        `UPDATE wardrobe_items SET wear_count = wear_count + 1, last_worn_date = ? WHERE id = ? AND user_id = ?`,
+        [today, id, req.userId],
+        function (err) {
+            if (err) { res.status(500).json({ error: err.message }); return; }
+            if (this.changes === 0) { res.status(404).json({ error: 'Item not found' }); return; }
+            db.get('SELECT * FROM wardrobe_items WHERE id = ?', [id], (err2, row: any) => {
+                if (err2) { res.status(500).json({ error: err2.message }); return; }
+                res.json({ data: mapRow(row) });
+            });
         }
-        if (this.changes === 0) {
-            res.status(404).json({ error: 'Item not found' });
-            return;
-        }
-        // Return the updated item
-        db.get('SELECT * FROM wardrobe_items WHERE id = ?', [id], (err2, row: any) => {
-            if (err2) {
-                res.status(500).json({ error: err2.message });
-                return;
-            }
-            res.json({ data: mapRow(row) });
-        });
-    });
+    );
 });
 
-// POST /wardrobe/:id/unwear - Undo a wear (decrement count)
-app.post('/wardrobe/:id/unwear', (req: Request, res: Response) => {
+// POST /wardrobe/:id/unwear
+app.post('/wardrobe/:id/unwear', requireAuth, (req: Request, res: Response) => {
     const { id } = req.params;
     const db = getDB();
 
-    const sql = `UPDATE wardrobe_items SET wear_count = MAX(0, wear_count - 1) WHERE id = ?`;
-    db.run(sql, [id], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
+    db.run(
+        `UPDATE wardrobe_items SET wear_count = MAX(0, wear_count - 1) WHERE id = ? AND user_id = ?`,
+        [id, req.userId],
+        function (err) {
+            if (err) { res.status(500).json({ error: err.message }); return; }
+            res.json({ message: 'Wear undone', id });
         }
-        res.json({ message: 'Wear undone', id });
-    });
+    );
 });
 
-// -----------------------------------------------------------------------------
-// Smart Recommendations (with Cooldown)
-// -----------------------------------------------------------------------------
+// ─── Smart Recommendations ────────────────────────────────────────────────────
 
-// Weighted random picker: items worn more recently get LOWER weight
 function weightedRandom(items: any[]): any {
     const now = Date.now();
     const ONE_DAY = 86400000;
 
     const weighted = items.map(item => {
         const lastWorn = item.last_worn_date ? new Date(item.last_worn_date).getTime() : 0;
-        const daysSinceWorn = lastWorn ? (now - lastWorn) / ONE_DAY : 30; // default 30 days if never worn
-        // Weight: higher = more likely to be picked. Recently worn = low weight.
+        const daysSinceWorn = lastWorn ? (now - lastWorn) / ONE_DAY : 30;
         const weight = Math.max(1, daysSinceWorn) / (1 + item.wear_count * 0.1);
         return { item, weight };
     });
@@ -180,28 +161,24 @@ function weightedRandom(items: any[]): any {
         random -= w.weight;
         if (random <= 0) return w.item;
     }
-    return weighted[weighted.length - 1].item; // fallback
+    return weighted[weighted.length - 1].item;
 }
 
-// GET /recommendations - Generate a smart outfit
-app.get('/recommendations', (req: Request, res: Response) => {
+// GET /recommendations
+app.get('/recommendations', requireAuth, (req: Request, res: Response) => {
     const db = getDB();
     const { occasion } = req.query;
 
-    // Build SQL with optional occasion filter
-    let sql = 'SELECT * FROM wardrobe_items';
-    const params: any[] = [];
+    let sql = 'SELECT * FROM wardrobe_items WHERE user_id = ?';
+    const params: any[] = [req.userId];
 
     if (occasion) {
-        sql += ' WHERE occasion = ?';
+        sql += ' AND occasion = ?';
         params.push(occasion);
     }
 
     db.all(sql, params, (err, rows: any[]) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+        if (err) { res.status(500).json({ error: err.message }); return; }
 
         const tops = rows.filter(item => item.category === 'top');
         const bottoms = rows.filter(item => item.category === 'bottom');
@@ -210,40 +187,30 @@ app.get('/recommendations', (req: Request, res: Response) => {
         if (tops.length === 0 || bottoms.length === 0 || shoes.length === 0) {
             res.status(400).json({
                 error: 'Not enough items. Need at least 1 top, 1 bottom, and 1 pair of shoes.',
-                missing: {
-                    tops: tops.length === 0,
-                    bottoms: bottoms.length === 0,
-                    shoes: shoes.length === 0
-                }
+                missing: { tops: tops.length === 0, bottoms: bottoms.length === 0, shoes: shoes.length === 0 }
             });
             return;
         }
 
-        const selectedTop = weightedRandom(tops);
-        const selectedBottom = weightedRandom(bottoms);
-        const selectedShoes = weightedRandom(shoes);
-
         res.json({
             data: {
                 id: Date.now().toString(),
-                items: [mapRow(selectedTop), mapRow(selectedBottom), mapRow(selectedShoes)],
+                items: [mapRow(weightedRandom(tops)), mapRow(weightedRandom(bottoms)), mapRow(weightedRandom(shoes))],
                 createdAt: new Date().toISOString()
             }
         });
     });
 });
 
-// -----------------------------------------------------------------------------
-// Gemini Integration
-// -----------------------------------------------------------------------------
+// ─── Gemini Integration ───────────────────────────────────────────────────────
 
 import { analyzeClothingItem, analyzeWardrobe, suggestPairings } from './services/gemini';
 import { seedDatabase } from './scripts/seed-demo';
 
-// POST /api/debug/seed - Populate database with demo data
-app.post('/api/debug/seed', async (req: Request, res: Response) => {
+// POST /api/debug/seed
+app.post('/api/debug/seed', requireAuth, async (req: Request, res: Response) => {
     try {
-        await seedDatabase();
+        await seedDatabase(req.userId!);
         res.json({ message: 'Database seeded with demo data!' });
     } catch (error) {
         console.error("Seeding failed:", error);
@@ -251,8 +218,8 @@ app.post('/api/debug/seed', async (req: Request, res: Response) => {
     }
 });
 
-// POST /api/analyze-item - Analyze clothing item with AI
-app.post('/api/analyze-item', async (req: Request, res: Response) => {
+// POST /api/analyze-item
+app.post('/api/analyze-item', requireAuth, async (req: Request, res: Response) => {
     const { imageUrl, description } = req.body;
 
     if (!imageUrl) {
@@ -261,10 +228,9 @@ app.post('/api/analyze-item', async (req: Request, res: Response) => {
     }
 
     try {
-        // Fetch user's wardrobe for personalized context
         const db = getDB();
         const wardrobe = await new Promise<any[]>((resolve, reject) => {
-            db.all('SELECT * FROM wardrobe_items', [], (err, rows) => {
+            db.all('SELECT * FROM wardrobe_items WHERE user_id = ?', [req.userId], (err, rows) => {
                 if (err) reject(err);
                 else resolve(rows || []);
             });
@@ -278,15 +244,12 @@ app.post('/api/analyze-item', async (req: Request, res: Response) => {
     }
 });
 
-// GET /api/wardrobe-analysis - Get outfit counts per occasion
-app.get('/api/wardrobe-analysis', (req: Request, res: Response) => {
+// GET /api/wardrobe-analysis
+app.get('/api/wardrobe-analysis', requireAuth, (req: Request, res: Response) => {
     const db = getDB();
 
-    db.all('SELECT * FROM wardrobe_items', [], async (err, rows: any[]) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+    db.all('SELECT * FROM wardrobe_items WHERE user_id = ?', [req.userId], async (err, rows: any[]) => {
+        if (err) { res.status(500).json({ error: err.message }); return; }
 
         try {
             const counts = await analyzeWardrobe(rows);
@@ -298,8 +261,8 @@ app.get('/api/wardrobe-analysis', (req: Request, res: Response) => {
     });
 });
 
-// POST /api/suggest-pairings - Get pairing suggestions for a new item
-app.post('/api/suggest-pairings', async (req: Request, res: Response) => {
+// POST /api/suggest-pairings
+app.post('/api/suggest-pairings', requireAuth, async (req: Request, res: Response) => {
     const { newItem } = req.body;
 
     if (!newItem) {
@@ -309,11 +272,8 @@ app.post('/api/suggest-pairings', async (req: Request, res: Response) => {
 
     const db = getDB();
 
-    db.all('SELECT * FROM wardrobe_items', [], async (err, rows: any[]) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+    db.all('SELECT * FROM wardrobe_items WHERE user_id = ?', [req.userId], async (err, rows: any[]) => {
+        if (err) { res.status(500).json({ error: err.message }); return; }
 
         try {
             const mappedRows = rows.map(mapRow);
@@ -326,9 +286,7 @@ app.post('/api/suggest-pairings', async (req: Request, res: Response) => {
     });
 });
 
-
-// Catch-all route for client-side routing
-// Catch-all route for client-side routing
+// ─── Catch-all for client-side routing ───────────────────────────────────────
 app.get(/.*/, (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
