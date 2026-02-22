@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { Camera, Image as ImageIcon, X, ChevronDown } from 'lucide-react-native';
+import * as FileSystem from 'expo-file-system';
+import { Camera, Image as ImageIcon, X, ChevronDown, Sparkles } from 'lucide-react-native';
 import { fetchApi } from '../lib/api';
 
 const CATEGORIES = ['top', 'bottom', 'shoes'];
@@ -15,19 +15,60 @@ export default function AddItemScreen() {
     const [color, setColor] = useState('');
     const [occasion, setOccasion] = useState<string>('casual');
     const [imageUri, setImageUri] = useState<string | null>(null);
+    const [imageBase64, setImageBase64] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const handleImageSelected = async (uri: string) => {
+        setImageUri(uri);
+        setError(null);
+        setIsAnalyzing(true);
+
+        try {
+            // Convert to base64 immediately for analysis and storage
+            const base64 = await FileSystem.readAsStringAsync(uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+            const dataUri = `data:image/jpeg;base64,${base64}`;
+            setImageBase64(dataUri);
+
+            // Trigger AI Analysis
+            const res = await fetchApi('/api/analyze-item', {
+                method: 'POST',
+                body: JSON.stringify({ imageUrl: dataUri }),
+            });
+
+            if (res.ok) {
+                const { data } = await res.json();
+                if (data) {
+                    setName(data.name || '');
+                    if (CATEGORIES.includes(data.category)) {
+                        setCategory(data.category);
+                    }
+                    if (OCCASIONS.includes(data.occasion)) {
+                        setOccasion(data.occasion);
+                    }
+                    setColor(data.color || '');
+                }
+            }
+        } catch (e) {
+            console.error('AI Analysis failed:', e);
+            // We don't block the user if AI fails, they can still fill manually
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 1,
+            allowsEditing: false, // DISABLING CROP
+            quality: 0.7, // Reduce quality slightly for faster base64 transfer
         });
 
         if (!result.canceled) {
-            setImageUri(result.assets[0].uri);
+            handleImageSelected(result.assets[0].uri);
         }
     };
 
@@ -39,13 +80,12 @@ export default function AddItemScreen() {
         }
 
         let result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 1,
+            allowsEditing: false, // DISABLING CROP
+            quality: 0.7,
         });
 
         if (!result.canceled) {
-            setImageUri(result.assets[0].uri);
+            handleImageSelected(result.assets[0].uri);
         }
     };
 
@@ -55,22 +95,21 @@ export default function AddItemScreen() {
             return;
         }
 
+        if (!imageBase64) {
+            setError('Please provide an image of the item');
+            return;
+        }
+
         setError(null);
         setIsLoading(true);
 
         try {
-            // Normally, you would upload the image to a storage bucket (S3, Cloudinary, etc.)
-            // and get a URL back. Since this relies on a specific backend implementation, 
-            // if imageUri exists, we can base64 encode or we can just pass the string if the mock backend accepts it.
-            // For now, let's pass it as imageUrl. Most simple backends will fail on massive base64 strings,
-            // so we'll just send the string. If it fails, you might need a real upload endpoint.
-
             const payload = {
                 name: name.trim(),
                 category,
                 color: color.trim().toLowerCase(),
                 occasion,
-                imageUrl: imageUri || undefined,
+                imageUrl: imageBase64,
             };
 
             const res = await fetchApi('/wardrobe', {
@@ -114,7 +153,16 @@ export default function AddItemScreen() {
                         {imageUri ? (
                             <View style={styles.imagePreviewContainer}>
                                 <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-                                <TouchableOpacity style={styles.removeImageBtn} onPress={() => setImageUri(null)}>
+                                {isAnalyzing && (
+                                    <View style={styles.analyzingOverlay}>
+                                        <ActivityIndicator color="#FFF" size="large" />
+                                        <View style={styles.analyzingBadge}>
+                                            <Sparkles size={14} color="#8b5cf6" style={{ marginRight: 6 }} />
+                                            <Text style={styles.analyzingText}>Gemini is analyzing...</Text>
+                                        </View>
+                                    </View>
+                                )}
+                                <TouchableOpacity style={styles.removeImageBtn} onPress={() => { setImageUri(null); setImageBase64(null); }} disabled={isAnalyzing}>
                                     <X size={16} color="#FFF" />
                                 </TouchableOpacity>
                             </View>
@@ -137,30 +185,30 @@ export default function AddItemScreen() {
 
                     {/* Form Fields */}
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Item Name</Text>
+                        <View style={styles.labelRow}>
+                            <Text style={styles.label}>Item Name</Text>
+                            {isAnalyzing && <ActivityIndicator size="small" color="#8b5cf6" />}
+                        </View>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isAnalyzing && styles.inputDisabled]}
                             value={name}
                             onChangeText={setName}
                             placeholder="e.g. Denim Jacket"
                             placeholderTextColor="#64748b"
+                            editable={!isAnalyzing}
                         />
                     </View>
 
                     <View style={styles.row}>
                         <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
                             <Text style={styles.label}>Category</Text>
-                            <View style={styles.pickerWrapper}>
-                                <Text style={styles.pickerText}>{category}</Text>
-                                <ChevronDown size={16} color="#64748b" />
-                            </View>
-                            {/* Simple inline selection for Category */}
                             <View style={styles.pillContainer}>
                                 {CATEGORIES.map(cat => (
                                     <TouchableOpacity
                                         key={cat}
-                                        style={[styles.pill, category === cat && styles.pillActive]}
+                                        style={[styles.pill, category === cat && styles.pillActive, isAnalyzing && styles.pillDisabled]}
                                         onPress={() => setCategory(cat)}
+                                        disabled={isAnalyzing}
                                     >
                                         <Text style={[styles.pillText, category === cat && styles.pillTextActive]}>
                                             {cat}
@@ -174,11 +222,12 @@ export default function AddItemScreen() {
                     <View style={styles.formGroup}>
                         <Text style={styles.label}>Color (Optional)</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isAnalyzing && styles.inputDisabled]}
                             value={color}
                             onChangeText={setColor}
                             placeholder="e.g. Blue"
                             placeholderTextColor="#64748b"
+                            editable={!isAnalyzing}
                         />
                     </View>
 
@@ -188,8 +237,9 @@ export default function AddItemScreen() {
                             {OCCASIONS.map(occ => (
                                 <TouchableOpacity
                                     key={occ}
-                                    style={[styles.pill, occasion === occ && styles.pillActive]}
+                                    style={[styles.pill, occasion === occ && styles.pillActive, isAnalyzing && styles.pillDisabled]}
                                     onPress={() => setOccasion(occ)}
+                                    disabled={isAnalyzing}
                                 >
                                     <Text style={[styles.pillText, occasion === occ && styles.pillTextActive]}>
                                         {occ}
@@ -210,14 +260,14 @@ export default function AddItemScreen() {
                 {/* Submit Footer */}
                 <View style={styles.footer}>
                     <TouchableOpacity
-                        style={[styles.submitBtn, (isLoading || !name.trim()) && styles.submitBtnDisabled]}
+                        style={[styles.submitBtn, (isLoading || isAnalyzing || !name.trim()) && styles.submitBtnDisabled]}
                         onPress={handleSubmit}
-                        disabled={isLoading || !name.trim()}
+                        disabled={isLoading || isAnalyzing || !name.trim()}
                     >
                         {isLoading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={[styles.submitText, (isLoading || !name.trim()) && styles.submitTextDisabled]}>
+                            <Text style={[styles.submitText, (isLoading || isAnalyzing || !name.trim()) && styles.submitTextDisabled]}>
                                 Save Item to Wardrobe
                             </Text>
                         )}
@@ -404,5 +454,40 @@ const styles = StyleSheet.create({
     },
     submitTextDisabled: {
         color: '#64748b',
+    },
+    analyzingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(10,10,15,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    analyzingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(139,92,246,0.15)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(139,92,246,0.3)',
+        marginTop: 12,
+    },
+    analyzingText: {
+        color: '#e2e8f0',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    inputDisabled: {
+        opacity: 0.5,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+    },
+    pillDisabled: {
+        opacity: 0.5,
+    },
+    labelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 10,
     },
 });
