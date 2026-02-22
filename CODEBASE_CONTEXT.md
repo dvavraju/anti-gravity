@@ -10,10 +10,11 @@
 |---|---|
 | **App Name** | Wardrobe Management |
 | **Repo** | `dvavraju/anti-gravity` on GitHub |
-| **Stack** | React 19 (Vite/TypeScript) + Node.js/Express (TypeScript) + SQLite |
+| **Stack** | **Mobile**: React Native (Expo/TypeScript) \| **Web**: React 19 (Vite) \| **API**: Node.js/Express \| **DB**: SQLite |
 | **AI** | Google Gemini (`gemini-flash-latest`) via `@google/generative-ai` |
-| **Deployment** | Docker container, exposed on port `3001`; previously hosted on Railway |
-| **Dev Command** | `npm run dev` (root) — runs client & server concurrently |
+| **Auth** | JWT-based authentication (Sign-up, Login, Protected Routes) |
+| **Deployment** | **Backend**: Railway (Cloud) \| **Mobile**: EAS (Android APK) \| **Web**: Docker/Local |
+| **Cloud URL** | `https://wardrobe-api-production-9d77.up.railway.app` |
 
 ---
 
@@ -21,45 +22,26 @@
 
 ```
 anti-gravity/
-├── client/               # React frontend (Vite + TypeScript)
+├── mobile/               # React Native (Expo Router) Mobile App
+│   ├── app/                    # Screens & Routes (Tabs, Login, Add Item)
+│   ├── components/             # Native UI components
+│   ├── context/                # AuthContext (JWT session management)
+│   └── lib/                    # API client (fetch wrapper)
+│
+├── client/               # React web frontend (Vite + TypeScript)
 │   └── src/
-│       ├── App.tsx             # Root component & all app state
-│       ├── index.css           # Global styles + design tokens
-│       ├── main.tsx            # React entry point
-│       ├── types/
-│       │   └── wardrobe.ts     # WardrobeItem and Outfit type definitions
-│       └── components/
-│           ├── home/
-│           │   └── OccasionGrid.tsx      # Occasion picker (Formal/Casual/etc.)
-│           ├── layout/
-│           │   ├── BottomNav.tsx         # Home/Wardrobe tab navigation
-│           │   ├── Container.tsx         # Page wrapper with max-width
-│           │   └── Grid.tsx              # Responsive item grid
-│           ├── onboarding/
-│           │   └── ChatInterface.tsx     # AI chat for uploading items via conversation
-│           ├── ui/
-│           │   └── Button.tsx            # Shared button component
-│           └── wardrobe/
-│               ├── OutfitCard.tsx        # Swipeable card deck for outfit display
-│               ├── WardrobeGrid.tsx      # Grid list of all wardrobe items
-│               ├── WardrobeItemCard.tsx  # Single item card (image + metadata)
-│               └── ItemDetailsModal.tsx  # Modal to view/edit/delete an item
+│       ├── components/         # Web UI components
+│       └── App.tsx             # Web root entry
 │
 ├── server/               # Express backend (TypeScript)
 │   └── src/
-│       ├── index.ts            # All REST API routes
-│       ├── db/
-│       │   └── index.ts        # SQLite init, table creation, migration
-│       ├── services/
-│       │   └── gemini.ts       # Gemini AI service (analyze, analyze wardrobe, pairings)
-│       └── scripts/
-│           ├── seed-demo.ts              # Populates DB with demo data
-│           ├── add-sample-items.ts       # Adds specific sample items
-│           └── analyze-existing-items.ts # Re-analyzes existing items with AI
+│       ├── db/                 # SQLite & Database migrations
+│       ├── middleware/         # Auth & JWT guards
+│       ├── routes/             # REST Endpoints (Auth, Wardrobe, AI)
+│       └── services/           # Gemini AI service logic
 │
-├── Dockerfile            # Multi-stage Docker build
-├── docker-compose.yml    # Local Docker compose setup
-└── package.json          # Root — scripts to run/build everything together
+├── Dockerfile            # Multi-stage Docker build for Web/API
+└── package.json          # Root scripts
 ```
 
 ---
@@ -70,42 +52,21 @@ anti-gravity/
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `string` | Timestamp-based (e.g. `Date.now().toString()`) |
+| `id` | `string` | Unique identifier (UUID or Timestamp) |
+| `user_id` | `string` | Foreign key identifying the item owner |
 | `name` | `string` | AI-generated creative name |
-| `category` | `'top' \| 'bottom' \| 'shoes' \| 'accessory'` | Main clothing type |
-| `subCategory` | `string?` | E.g. "hoodie", "jeans", "sneakers" |
+| `category` | `'top' \| 'bottom' \| 'shoes'` | Main clothing type |
 | `color` | `string?` | Primary color |
 | `occasion` | `string?` | `formal`, `casual`, `sport`, `family`, `informal` |
-| `imageUrl` | `string?` | Base64 data URL of the photo |
-| `wearCount` | `number` | Times worn, tracked in DB |
-| `lastWornDate` | `string?` | ISO date string `YYYY-MM-DD` |
+| `image_url` | `text` | **Base64 encoded** image data URL |
 
-### `Outfit` (TypeScript type — `types/wardrobe.ts`)
+### SQLite Table — `users`
 
-```ts
-interface Outfit {
-  id: string;          // Timestamp-based
-  items: WardrobeItem[]; // Always [top, bottom, shoes]
-  createdAt: string;
-}
-```
-
-### SQLite Table — `wardrobe_items`
-
-```sql
-CREATE TABLE wardrobe_items (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  category TEXT NOT NULL CHECK(category IN ('top', 'bottom', 'shoes', 'accessory')),
-  sub_category TEXT,
-  color TEXT,
-  image_url TEXT,          -- Full base64 image stored in DB
-  occasion TEXT,
-  wear_count INTEGER DEFAULT 0,
-  last_worn_date TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `text` | Primary Key |
+| `name` | `text` | Unique username |
+| `password_hash` | `text` | Bcrypt hashed password |
 
 > **Note:** `image_url` stores full base64 data URLs directly in the DB. This means DB file can grow large with many photos.
 
@@ -115,41 +76,29 @@ CREATE TABLE wardrobe_items (
 
 The Express server runs on **port 3001** and serves both the API and the React build (from `client/dist`).
 
-### Wardrobe CRUD
+### Authentication
 
 | Method | Route | Description |
 |---|---|---|
-| `GET` | `/wardrobe` | List all items (newest first) |
-| `POST` | `/wardrobe` | Create item (`name`, `category`, `color`, `imageUrl`, `occasion`) |
-| `PUT` | `/wardrobe/:id` | Update item metadata (name, category, subCategory, color, occasion) |
+| `POST` | `/auth/signup` | Create account (returns JWT token) |
+| `POST` | `/auth/login` | Login with username/password (returns JWT token) |
+| `GET` | `/auth/me` | Refresh user session from token |
+
+### Wardrobe CRUD (Requires Auth Header)
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/wardrobe` | List user's items |
+| `POST` | `/wardrobe` | Create item (supports large base64 payloads) |
 | `DELETE` | `/wardrobe/:id` | Delete item |
-
-### Wear Tracking
-
-| Method | Route | Description |
-|---|---|---|
-| `POST` | `/wardrobe/:id/wear` | Increment `wear_count`, set `last_worn_date` to today |
-| `POST` | `/wardrobe/:id/unwear` | Decrement `wear_count` |
-
-### Outfit Recommendations
-
-| Method | Route | Description |
-|---|---|---|
-| `GET` | `/recommendations?occasion=` | Returns one outfit (top + bottom + shoes) using weighted random |
-
-**Weighted Random Algorithm:** Items worn more recently get a *lower* weight so under-worn items surface more often.
-```
-weight = daysSinceWorn / (1 + wearCount × 0.1)
-```
 
 ### AI / Gemini Endpoints
 
 | Method | Route | Description |
 |---|---|---|
-| `POST` | `/api/analyze-item` | Analyze a clothing photo → returns `name, category, subCategory, color, occasion` |
-| `GET` | `/api/wardrobe-analysis` | Estimate outfit counts per occasion using Gemini |
-| `POST` | `/api/suggest-pairings` | Given a new item, suggest best matching items from existing wardrobe |
-| `POST` | `/api/debug/seed` | Seed database with demo wardrobe items |
+| `POST` | `/api/analyze-item` | **Gemini Vision**: Auto-detects Name/Category/Occasion from photo |
+| `GET` | `/api/wardrobe-analysis` | Statistics on outfit variety |
+| `POST` | `/api/suggest-pairings` | AI-suggested matches for new items |
 
 ---
 
@@ -284,32 +233,27 @@ The app uses **TailwindCSS v4** with custom `@theme` tokens.
 
 ---
 
-## 8. Deployment
+## 8. Development & Deployment
 
-### Docker (Multi-stage)
+### Production Cloud Deployment (Railway)
+- **Service**: wardobe-api
+- **Persistent Storage**: Mounted volume at `/app/data` for the `wardrobe.db` file.
+- **Port**: Uses `process.env.PORT` dynamically.
+- **Auto-Sync**: Pushing to `origin main` automatically redeploys the latest API.
 
-```
-Stage 1: node:20-alpine → build client → /app/client/dist
-Stage 2: node:20-alpine → build server → /app/server/dist
-Stage 3: production image → copy both builds, run npm start (node dist/index.js)
-```
+### Mobile Build (Expo / EAS)
+- **Profile**: `preview` (creates a standalone Android APK).
+- **Command**: `npx eas-cli build -p android --profile preview`
+- **Config**: Root guard in `_layout.tsx` prevents access to dashboard without a valid JWT token stored in `SecureStore`.
 
-Exposed port: **3001**. Server also serves the built React app as static files, so there is only one port to expose.
+---
 
-### Environment Variables (Server)
+## 9. Major Achievements (Today's Sprint)
 
-| Variable | Required | Description |
-|---|---|---|
-| `GEMINI_API_KEY` | ✅ Yes | Google Generative AI key |
-| `DB_PATH` | Optional | Path to SQLite DB file (default: `./wardrobe.db`) |
-
-### npm Scripts
-
-| Command | Does |
-|---|---|
-| `npm run dev` (root) | Runs client dev server (Vite, port 5173) + server dev (`tsx watch`, port 3001) concurrently |
-| `npm run build` (root) | Builds client then server (TypeScript → JS) |
-| `npm run install:all` | Installs root + server + client dependencies |
+- **Native Migration**: Ported the entire React web experience to React Native (Expo).
+- **Authentication**: Built a full multi-user sign-up/login system with JWT security.
+- **Cloud Scale**: Moved backend to Railway with production port binding and environment variable management.
+- **AI Add-Item**: Implemented a "Zero-Click" upload flow. Users take a photo, Gemini auto-labels the item, and it saves instantly using high-fidelity Base64.
 
 ---
 
