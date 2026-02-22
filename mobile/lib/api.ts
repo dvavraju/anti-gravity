@@ -1,9 +1,7 @@
 import { Platform } from 'react-native';
 
-const LOCALHOST = Platform.OS === 'android' ? '10.0.2.2' : '127.0.0.1';
-const PORT = 3001;
-
-export const API_URL = `http://${LOCALHOST}:${PORT}`;
+// Use deployed production URL
+export const API_URL = 'https://wardrobe-api-production-9d77.up.railway.app';
 
 let globalToken: string | null = null;
 
