@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import { Camera, Image as ImageIcon, X, ChevronDown, Sparkles } from 'lucide-react-native';
 import { fetchApi } from '../lib/api';
 
@@ -27,9 +28,8 @@ export default function AddItemScreen() {
 
         try {
             // Convert to base64 immediately for analysis and storage
-            const base64 = await FileSystem.readAsStringAsync(uri, {
-                encoding: FileSystem.EncodingType.Base64,
-            });
+            const file = new FileSystem.File(uri);
+            const base64 = await file.base64();
             const dataUri = `data:image/jpeg;base64,${base64}`;
             setImageBase64(dataUri);
 
@@ -62,7 +62,7 @@ export default function AddItemScreen() {
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false, // DISABLING CROP
             quality: 0.7, // Reduce quality slightly for faster base64 transfer
         });
@@ -80,6 +80,7 @@ export default function AddItemScreen() {
         }
 
         let result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false, // DISABLING CROP
             quality: 0.7,
         });
