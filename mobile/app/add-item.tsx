@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
@@ -20,6 +20,14 @@ export default function AddItemScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [flowStatus, setFlowStatus] = useState<'initial' | 'picking' | 'analyzing' | 'review' | 'saving'>('initial');
+
+    useEffect(() => {
+        // Auto-trigger image selection on mount
+        if (flowStatus === 'initial') {
+            setFlowStatus('picking');
+        }
+    }, []);
 
     const handleImageSelected = async (uri: string) => {
         setImageUri(uri);
@@ -27,6 +35,7 @@ export default function AddItemScreen() {
         setIsAnalyzing(true);
 
         try {
+            setFlowStatus('analyzing');
             // Convert to base64 immediately for analysis and storage
             const file = new FileSystem.File(uri);
             const base64 = await file.base64();
@@ -52,9 +61,10 @@ export default function AddItemScreen() {
                     setColor(data.color || '');
                 }
             }
+            setFlowStatus('review');
         } catch (e) {
             console.error('AI Analysis failed:', e);
-            // We don't block the user if AI fails, they can still fill manually
+            setFlowStatus('review'); // Still let them review/edit manually
         } finally {
             setIsAnalyzing(false);
         }
@@ -143,137 +153,148 @@ export default function AddItemScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
                         <X size={24} color="#e2e8f0" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Add New Item</Text>
-                    <View style={{ width: 40 }} /> {/* Spacer for centering */}
+                    <Text style={styles.headerTitle}>
+                        {flowStatus === 'review' ? 'Review Item' : 'Add New Item'}
+                    </Text>
+                    <View style={{ width: 40 }} />
                 </View>
 
-                <ScrollView contentContainerStyle={styles.content}>
+                {flowStatus === 'picking' && (
+                    <View style={styles.pickerFlowContainer}>
+                        <View style={styles.pickerHeader}>
+                            <Sparkles size={32} color="#8b5cf6" />
+                            <Text style={styles.pickerTitle}>Add to Your Wardrobe</Text>
+                            <Text style={styles.pickerSubtitle}>Take a photo or upload an image to start</Text>
+                        </View>
+                        <View style={styles.pickerButtons}>
+                            <TouchableOpacity style={styles.heroActionBtn} onPress={takePhoto}>
+                                <View style={[styles.iconCircle, { backgroundColor: '#8b5cf6' }]}>
+                                    <Camera size={28} color="#FFF" />
+                                </View>
+                                <Text style={styles.heroActionText}>Take Photo</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.heroActionBtn} onPress={pickImage}>
+                                <View style={[styles.iconCircle, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+                                    <ImageIcon size={28} color="#8b5cf6" />
+                                </View>
+                                <Text style={styles.heroActionText}>Upload Image</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
 
-                    {/* Image Picker Area */}
-                    <View style={styles.imageSection}>
-                        {imageUri ? (
-                            <View style={styles.imagePreviewContainer}>
-                                <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-                                {isAnalyzing && (
-                                    <View style={styles.analyzingOverlay}>
-                                        <ActivityIndicator color="#FFF" size="large" />
-                                        <View style={styles.analyzingBadge}>
-                                            <Sparkles size={14} color="#8b5cf6" style={{ marginRight: 6 }} />
-                                            <Text style={styles.analyzingText}>Gemini is analyzing...</Text>
-                                        </View>
-                                    </View>
-                                )}
-                                <TouchableOpacity style={styles.removeImageBtn} onPress={() => { setImageUri(null); setImageBase64(null); }} disabled={isAnalyzing}>
-                                    <X size={16} color="#FFF" />
-                                </TouchableOpacity>
+                {flowStatus === 'analyzing' && (
+                    <View style={styles.analyzingFlowContainer}>
+                        {imageUri && <Image source={{ uri: imageUri }} style={styles.analyzingGhostImage} />}
+                        <View style={styles.analyzingFlowContent}>
+                            <ActivityIndicator size="large" color="#8b5cf6" />
+                            <View style={styles.analyzingBadgeLarge}>
+                                <Sparkles size={20} color="#8b5cf6" style={{ marginRight: 8 }} />
+                                <Text style={styles.analyzingTextLarge}>Gemini is analyzing...</Text>
                             </View>
-                        ) : (
-                            <View style={styles.imagePlaceholder}>
-                                <View style={styles.imageActions}>
-                                    <TouchableOpacity style={styles.imageActionBtn} onPress={takePhoto}>
-                                        <Camera size={24} color="#8b5cf6" />
-                                        <Text style={styles.imageActionText}>Take Photo</Text>
-                                    </TouchableOpacity>
-                                    <View style={styles.divider} />
-                                    <TouchableOpacity style={styles.imageActionBtn} onPress={pickImage}>
-                                        <ImageIcon size={24} color="#8b5cf6" />
-                                        <Text style={styles.imageActionText}>Upload</Text>
-                                    </TouchableOpacity>
+                            <Text style={styles.analyzingSubtext}>Identifying category, color, and style</Text>
+                        </View>
+                    </View>
+                )}
+
+                {flowStatus === 'review' && (
+                    <ScrollView contentContainerStyle={styles.content}>
+                        {/* Image Preview */}
+                        <View style={styles.reviewImageSection}>
+                            <Image source={{ uri: imageUri! }} style={styles.reviewImage} />
+                            <TouchableOpacity
+                                style={styles.changeImageBtn}
+                                onPress={() => setFlowStatus('picking')}
+                            >
+                                <Camera size={16} color="#FFF" />
+                                <Text style={styles.changeImageText}>Change</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Review Form */}
+                        <View style={styles.reviewCard}>
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Item Name</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={name}
+                                    onChangeText={setName}
+                                    placeholder="e.g. Denim Jacket"
+                                    placeholderTextColor="#64748b"
+                                />
+                            </View>
+
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Category</Text>
+                                <View style={styles.pillContainer}>
+                                    {CATEGORIES.map(cat => (
+                                        <TouchableOpacity
+                                            key={cat}
+                                            style={[styles.pill, category === cat && styles.pillActive]}
+                                            onPress={() => setCategory(cat)}
+                                        >
+                                            <Text style={[styles.pillText, category === cat && styles.pillTextActive]}>
+                                                {cat}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
                                 </View>
                             </View>
-                        )}
-                    </View>
 
-                    {/* Form Fields */}
-                    <View style={styles.formGroup}>
-                        <View style={styles.labelRow}>
-                            <Text style={styles.label}>Item Name</Text>
-                            {isAnalyzing && <ActivityIndicator size="small" color="#8b5cf6" />}
-                        </View>
-                        <TextInput
-                            style={[styles.input, isAnalyzing && styles.inputDisabled]}
-                            value={name}
-                            onChangeText={setName}
-                            placeholder="e.g. Denim Jacket"
-                            placeholderTextColor="#64748b"
-                            editable={!isAnalyzing}
-                        />
-                    </View>
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Color</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={color}
+                                    onChangeText={setColor}
+                                    placeholder="e.g. Blue"
+                                    placeholderTextColor="#64748b"
+                                />
+                            </View>
 
-                    <View style={styles.row}>
-                        <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                            <Text style={styles.label}>Category</Text>
-                            <View style={styles.pillContainer}>
-                                {CATEGORIES.map(cat => (
-                                    <TouchableOpacity
-                                        key={cat}
-                                        style={[styles.pill, category === cat && styles.pillActive, isAnalyzing && styles.pillDisabled]}
-                                        onPress={() => setCategory(cat)}
-                                        disabled={isAnalyzing}
-                                    >
-                                        <Text style={[styles.pillText, category === cat && styles.pillTextActive]}>
-                                            {cat}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Best Occasion</Text>
+                                <View style={styles.pillContainer}>
+                                    {OCCASIONS.map(occ => (
+                                        <TouchableOpacity
+                                            key={occ}
+                                            style={[styles.pill, occasion === occ && styles.pillActive]}
+                                            onPress={() => setOccasion(occ)}
+                                        >
+                                            <Text style={[styles.pillText, occasion === occ && styles.pillTextActive]}>
+                                                {occ}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
                             </View>
                         </View>
-                    </View>
 
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Color (Optional)</Text>
-                        <TextInput
-                            style={[styles.input, isAnalyzing && styles.inputDisabled]}
-                            value={color}
-                            onChangeText={setColor}
-                            placeholder="e.g. Blue"
-                            placeholderTextColor="#64748b"
-                            editable={!isAnalyzing}
-                        />
-                    </View>
-
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Best Occasion</Text>
-                        <View style={styles.pillContainer}>
-                            {OCCASIONS.map(occ => (
-                                <TouchableOpacity
-                                    key={occ}
-                                    style={[styles.pill, occasion === occ && styles.pillActive, isAnalyzing && styles.pillDisabled]}
-                                    onPress={() => setOccasion(occ)}
-                                    disabled={isAnalyzing}
-                                >
-                                    <Text style={[styles.pillText, occasion === occ && styles.pillTextActive]}>
-                                        {occ}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-
-                    {error && (
-                        <View style={styles.errorContainer}>
-                            <Text style={styles.errorText}>{error}</Text>
-                        </View>
-                    )}
-
-                </ScrollView>
-
-                {/* Submit Footer */}
-                <View style={styles.footer}>
-                    <TouchableOpacity
-                        style={[styles.submitBtn, (isLoading || isAnalyzing || !name.trim()) && styles.submitBtnDisabled]}
-                        onPress={handleSubmit}
-                        disabled={isLoading || isAnalyzing || !name.trim()}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={[styles.submitText, (isLoading || isAnalyzing || !name.trim()) && styles.submitTextDisabled]}>
-                                Save Item to Wardrobe
-                            </Text>
+                        {error && (
+                            <View style={styles.errorContainer}>
+                                <Text style={styles.errorText}>{error}</Text>
+                            </View>
                         )}
-                    </TouchableOpacity>
-                </View>
+                    </ScrollView>
+                )}
+
+                {flowStatus === 'review' && (
+                    <View style={styles.footer}>
+                        <TouchableOpacity
+                            style={[styles.submitBtn, (isLoading || !name.trim()) && styles.submitBtnDisabled]}
+                            onPress={handleSubmit}
+                            disabled={isLoading || !name.trim()}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={[styles.submitText, (isLoading || !name.trim()) && styles.submitTextDisabled]}>
+                                    Add to My Wardrobe
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                )}
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -490,5 +511,125 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 10,
+    },
+    pickerFlowContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+    },
+    pickerHeader: {
+        alignItems: 'center',
+        marginBottom: 60,
+    },
+    pickerTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#FFF',
+        marginTop: 20,
+        textAlign: 'center',
+    },
+    pickerSubtitle: {
+        fontSize: 16,
+        color: '#94a3b8',
+        marginTop: 10,
+        textAlign: 'center',
+    },
+    pickerButtons: {
+        flexDirection: 'row',
+        gap: 20,
+    },
+    heroActionBtn: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    iconCircle: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    heroActionText: {
+        color: '#e2e8f0',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    analyzingFlowContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    analyzingGhostImage: {
+        ...StyleSheet.absoluteFillObject,
+        opacity: 0.15,
+        width: '100%',
+        height: '100%',
+    },
+    analyzingFlowContent: {
+        alignItems: 'center',
+    },
+    analyzingBadgeLarge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(139,92,246,0.15)',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 30,
+        borderWidth: 1,
+        borderColor: 'rgba(139,92,246,0.3)',
+        marginTop: 24,
+    },
+    analyzingTextLarge: {
+        color: '#e2e8f0',
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    analyzingSubtext: {
+        color: '#64748b',
+        marginTop: 12,
+        fontSize: 14,
+    },
+    reviewImageSection: {
+        width: '100%',
+        aspectRatio: 1,
+        borderRadius: 24,
+        overflow: 'hidden',
+        marginBottom: 20,
+        position: 'relative',
+        backgroundColor: 'rgba(255,255,255,0.02)',
+    },
+    reviewImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    changeImageBtn: {
+        position: 'absolute',
+        bottom: 16,
+        right: 16,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        gap: 6,
+    },
+    changeImageText: {
+        color: '#FFF',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    reviewCard: {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 24,
+        padding: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        marginBottom: 20,
     },
 });

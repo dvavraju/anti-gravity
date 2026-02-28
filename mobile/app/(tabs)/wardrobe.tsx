@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Act
 import { WardrobeGrid } from '../../components/wardrobe/WardrobeGrid';
 import { WardrobeItem } from '../../types/wardrobe';
 import { fetchApi } from '../../lib/api';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 
 export default function WardrobeScreen() {
@@ -27,9 +27,11 @@ export default function WardrobeScreen() {
         }
     }, []);
 
-    useEffect(() => {
-        fetchWardrobe();
-    }, [fetchWardrobe]);
+    useFocusEffect(
+        useCallback(() => {
+            fetchWardrobe();
+        }, [fetchWardrobe])
+    );
 
     const handleItemClick = (item: WardrobeItem) => {
         // We will hook this up to a detail modal next
