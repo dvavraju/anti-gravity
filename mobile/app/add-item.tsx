@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView, Dimensions, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
@@ -49,16 +49,32 @@ export default function AddItemScreen() {
             });
 
             if (res.ok) {
-                const { data } = await res.json();
+                const responseData = await res.json();
+                const data = responseData.data;
+                const aiWarning = responseData.aiWarning;
+
                 if (data) {
                     setName(data.name || '');
-                    if (CATEGORIES.includes(data.category)) {
-                        setCategory(data.category);
+                    const lowerCat = (data.category || '').toLowerCase();
+                    if (CATEGORIES.includes(lowerCat)) {
+                        setCategory(lowerCat);
                     }
-                    if (OCCASIONS.includes(data.occasion)) {
-                        setOccasion(data.occasion);
+                    const lowerOcc = (data.occasion || '').toLowerCase();
+                    if (OCCASIONS.includes(lowerOcc)) {
+                        setOccasion(lowerOcc);
                     }
                     setColor(data.color || '');
+                }
+
+                if (aiWarning) {
+                    // AI failed — alert user to double-check
+                    setTimeout(() => {
+                        Alert.alert(
+                            '⚠️ AI Analysis Failed',
+                            'Could not auto-detect item details. Please select the correct Category, Color, and Occasion manually before saving.',
+                            [{ text: 'OK' }]
+                        );
+                    }, 300);
                 }
             }
             setFlowStatus('review');

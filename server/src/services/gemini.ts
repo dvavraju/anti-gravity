@@ -31,7 +31,7 @@ export async function analyzeClothingItem(
     wardrobeContext?: any[]  // User's existing items for personalized learning
 ): Promise<ItemAnalysis> {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         // Build context from user's wardrobe
         const styleContext = wardrobeContext && wardrobeContext.length > 0
@@ -41,19 +41,25 @@ export async function analyzeClothingItem(
             : '';
 
         const prompt = `
-    Analyze the clothing item in this image.
+    You are a clothing classification AI. Analyze the clothing item in this image.
     User description: ${userDescription || 'None'}
     ${styleContext}
     
-    Based on the user's existing wardrobe and style preferences above, classify this new item.
-    Pay attention to how they categorize similar colors and styles.
+    CRITICAL RULES:
+    - "category" MUST be exactly one of: "top", "bottom", "shoes"
+      - "top" = shirts, t-shirts, jackets, hoodies, sweaters, blazers, vests, coats
+      - "bottom" = pants, jeans, trousers, shorts, skirts, leggings
+      - "shoes" = sneakers, boots, sandals, heels, loafers, dress shoes, slippers
+    - "color" must be the ACTUAL primary color you see (black, white, grey, brown, navy, red, etc.)
+    - "occasion" must be one of: "formal", "casual", "sport", "family", "informal"
+    - "name" should be a short creative name (e.g. "Classic Black Oxfords", "Distressed Denim Jeans")
     
-    Return ONLY a valid JSON object matching this structure (no markdown, no backticks):
+    Return ONLY a valid JSON object (no markdown, no backticks):
     { 
       "name": "Creative Name", 
       "category": "top" | "bottom" | "shoes", 
-      "subCategory": "specific type like hoodie, jeans, etc", 
-      "color": "primary color", 
+      "subCategory": "specific type like hoodie, jeans, oxford shoes, etc", 
+      "color": "actual primary color you see", 
       "occasion": "formal" | "casual" | "sport" | "family" | "informal" 
     }
     `;
@@ -67,43 +73,25 @@ export async function analyzeClothingItem(
         // Clean up markdown if present
         const jsonStr = text.replace(/```json\n?|\n?```/g, '').trim();
         return JSON.parse(jsonStr) as ItemAnalysis;
-    } catch (error) {
-        console.error("Gemini Analysis Error:", error);
+    } catch (error: any) {
+        console.error("Gemini Analysis Error:", error?.message || error);
 
-        // Fallback: Use wardrobe context for smart defaults
-        if (wardrobeContext && wardrobeContext.length > 0) {
-            // Find most common occasion in user's wardrobe
-            const occasionCounts: Record<string, number> = {};
-            wardrobeContext.forEach(item => {
-                occasionCounts[item.occasion] = (occasionCounts[item.occasion] || 0) + 1;
-            });
-            const mostCommonOccasion = Object.entries(occasionCounts)
-                .sort(([, a], [, b]) => b - a)[0]?.[0] || 'casual';
-
-            return {
-                name: "New Clothing Item",
-                category: "top",
-                subCategory: "shirt",
-                color: "blue",
-                occasion: mostCommonOccasion as any // Use user's most common occasion
-            };
-        }
-
-        // Final fallback
+        // Return a clearly-marked fallback so the client knows AI failed
         return {
-            name: "New Clothing Item",
-            category: "top",
-            subCategory: "shirt",
-            color: "blue",
-            occasion: "casual"
-        };
+            name: "Unidentified Item",
+            category: "top" as const,
+            subCategory: "unknown",
+            color: "unknown",
+            occasion: "casual",
+            _aiError: error?.message || 'Gemini analysis failed'
+        } as any;
     }
 }
 
 
 export async function analyzeWardrobe(items: any[]): Promise<Record<string, number>> {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const prompt = `
     Analyze this wardrobe list and estimate how many UNIQUE viable outfits (top + bottom + shoes) can be created for each occasion.
@@ -152,7 +140,7 @@ export interface PairingSuggestions {
 export async function suggestPairings(newItem: ItemAnalysis, existingItems: any[]): Promise<PairingSuggestions> {
     try {
         // Try AI-powered pairing first
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const prompt = `
         A user just uploaded this new item:

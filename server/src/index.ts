@@ -278,7 +278,14 @@ app.post('/api/analyze-item', requireAuth, async (req: Request, res: Response) =
         });
 
         const analysis = await analyzeClothingItem(imageUrl, description, wardrobe);
-        res.json({ data: analysis });
+        const aiError = (analysis as any)._aiError;
+        if (aiError) {
+            console.warn('AI analysis failed, returning fallback:', aiError);
+        }
+        res.json({
+            data: analysis,
+            aiWarning: aiError ? 'AI analysis failed. Please verify the details manually.' : undefined
+        });
     } catch (error) {
         console.error("Analysis failed:", error);
         res.status(500).json({ error: 'Failed to analyze item' });
