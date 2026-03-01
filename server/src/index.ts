@@ -185,49 +185,49 @@ app.get('/recommendations', requireAuth, (req: Request, res: Response) => {
     const db = getDB();
     const { occasion } = req.query;
 
-    let sql = 'SELECT * FROM wardrobe_items WHERE user_id = ?';
-    const params: any[] = [req.userId];
+    // Step 1: Always fetch ALL items for this user first
+    db.all(
+        'SELECT * FROM wardrobe_items WHERE user_id = ?',
+        [req.userId],
+        (err, allRows: any[]) => {
+            if (err) { res.status(500).json({ error: err.message }); return; }
 
-    if (occasion) {
-        sql += ' AND occasion = ?';
-        params.push(occasion);
-    }
+            // Categorize ALL items (case-insensitive)
+            const allTops = allRows.filter(i => i.category?.toLowerCase() === 'top');
+            const allBottoms = allRows.filter(i => i.category?.toLowerCase() === 'bottom');
+            const allShoes = allRows.filter(i => i.category?.toLowerCase() === 'shoes');
 
-    db.all(sql, params, (err, rows: any[]) => {
-        if (err) { res.status(500).json({ error: err.message }); return; }
-
-        const getCategoryItems = (category: string) => {
-            let items = rows.filter(item => item.category === category);
-
-            // If no items for this occasion, fallback to ANY item of this category for this user
-            if (items.length === 0 && occasion) {
-                return new Promise<any[]>((resolve, reject) => {
-                    db.all(
-                        'SELECT * FROM wardrobe_items WHERE user_id = ? AND category = ?',
-                        [req.userId, category],
-                        (err, fallbackRows) => {
-                            if (err) reject(err);
-                            else resolve(fallbackRows || []);
-                        }
-                    );
-                });
-            }
-            return Promise.resolve(items);
-        };
-
-        Promise.all([
-            getCategoryItems('top'),
-            getCategoryItems('bottom'),
-            getCategoryItems('shoes')
-        ]).then(([tops, bottoms, shoes]) => {
-            if (tops.length === 0 || bottoms.length === 0 || shoes.length === 0) {
+            // If the entire wardrobe is missing a category, we can't form any outfit
+            if (allTops.length === 0 || allBottoms.length === 0 || allShoes.length === 0) {
+                const missing: string[] = [];
+                if (allTops.length === 0) missing.push('top');
+                if (allBottoms.length === 0) missing.push('bottom');
+                if (allShoes.length === 0) missing.push('shoes');
                 res.status(400).json({
-                    error: 'Not enough items. Need at least 1 top, 1 bottom, and 1 pair of shoes in your entire wardrobe.',
-                    missing: { tops: tops.length === 0, bottoms: bottoms.length === 0, shoes: shoes.length === 0 }
+                    error: `Add at least one ${missing.join(', ')} to get outfit suggestions.`,
+                    missing: { tops: allTops.length === 0, bottoms: allBottoms.length === 0, shoes: allShoes.length === 0 }
                 });
                 return;
             }
 
+            // Step 2: Try to use occasion-filtered items first, fall back to ALL
+            let tops = allTops;
+            let bottoms = allBottoms;
+            let shoes = allShoes;
+
+            if (occasion) {
+                const occ = (occasion as string).toLowerCase();
+                const occasionTops = allTops.filter(i => i.occasion?.toLowerCase() === occ);
+                const occasionBottoms = allBottoms.filter(i => i.occasion?.toLowerCase() === occ);
+                const occasionShoes = allShoes.filter(i => i.occasion?.toLowerCase() === occ);
+
+                // Use occasion-specific items where available, fall back to all for missing categories
+                if (occasionTops.length > 0) tops = occasionTops;
+                if (occasionBottoms.length > 0) bottoms = occasionBottoms;
+                if (occasionShoes.length > 0) shoes = occasionShoes;
+            }
+
+            // Step 3: Pick one from each category and respond
             res.json({
                 data: {
                     id: Date.now().toString(),
@@ -239,10 +239,8 @@ app.get('/recommendations', requireAuth, (req: Request, res: Response) => {
                     createdAt: new Date().toISOString()
                 }
             });
-        }).catch(err => {
-            res.status(500).json({ error: err.message });
-        });
-    });
+        }
+    );
 });
 
 // ─── Gemini Integration ───────────────────────────────────────────────────────

@@ -18,6 +18,7 @@ export default function HomeScreen() {
     const [outfitIndex, setOutfitIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingOutfit, setIsLoadingOutfit] = useState(false);
+    const [suggestionError, setSuggestionError] = useState<string | null>(null);
 
     const fetchWardrobe = useCallback(async () => {
         setIsLoading(true);
@@ -41,11 +42,19 @@ export default function HomeScreen() {
 
     const fetchRecommendation = async (occasion?: string, appendToHistory = true) => {
         setIsLoadingOutfit(true);
+        setSuggestionError(null);
         try {
             const url = occasion ? `/recommendations?occasion=${occasion}` : '/recommendations';
             const res = await fetchApi(url);
-            if (!res.ok) throw new Error('Failed to fetch');
             const data = await res.json();
+
+            if (!res.ok) {
+                // Show the actual error from the server
+                setSuggestionError(data.error || 'Could not generate an outfit.');
+                setCurrentOutfit(null);
+                return;
+            }
+
             if (data.data) {
                 setCurrentOutfit(data.data);
                 if (appendToHistory) {
@@ -58,6 +67,7 @@ export default function HomeScreen() {
             }
         } catch (error) {
             console.error("Failed to fetch recommendation:", error);
+            setSuggestionError('Network error. Please check your connection.');
             setCurrentOutfit(null);
         } finally {
             setIsLoadingOutfit(false);
@@ -152,7 +162,17 @@ export default function HomeScreen() {
                                         <Text style={styles.emptyOutfitText}>Curating your look...</Text>
                                     </>
                                 ) : (
-                                    <Text style={styles.emptyOutfitText}>No {selectedOccasion} items in your wardrobe yet.</Text>
+                                    <>
+                                        <Text style={styles.emptyOutfitText}>
+                                            {suggestionError || `No ${selectedOccasion} items in your wardrobe yet.`}
+                                        </Text>
+                                        <TouchableOpacity
+                                            style={{ marginTop: 16, backgroundColor: '#8b5cf6', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+                                            onPress={() => fetchRecommendation(selectedOccasion || undefined)}
+                                        >
+                                            <Text style={{ color: '#fff', fontWeight: '700' }}>Try Again</Text>
+                                        </TouchableOpacity>
+                                    </>
                                 )}
                             </View>
                         </View>

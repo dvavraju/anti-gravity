@@ -43,25 +43,26 @@ export const OccasionGrid: React.FC<OccasionGridProps> = ({ onSelectOccasion, wa
         const result: Record<string, number> = {};
         const occasionsList = ['formal', 'casual', 'family', 'sport', 'informal'];
 
-        const hasAnyTop = wardrobeItems.some(i => i.category === 'top');
-        const hasAnyBottom = wardrobeItems.some(i => i.category === 'bottom');
-        const hasAnyShoes = wardrobeItems.some(i => i.category === 'shoes');
+        const hasAnyTop = wardrobeItems.some(i => i.category?.toLowerCase() === 'top');
+        const hasAnyBottom = wardrobeItems.some(i => i.category?.toLowerCase() === 'bottom');
+        const hasAnyShoes = wardrobeItems.some(i => i.category?.toLowerCase() === 'shoes');
         const canFormAnyOutfit = hasAnyTop && hasAnyBottom && hasAnyShoes;
 
         for (const occasion of occasionsList) {
-            const occasionItems = wardrobeItems.filter(
-                (item) => item.occasion?.toLowerCase() === occasion
-            );
-
-            if (occasionItems.length === 0 || !canFormAnyOutfit) {
+            if (!canFormAnyOutfit) {
                 result[occasion] = 0;
                 continue;
             }
 
-            // Count items matching occasion, or fallback to 1 if we have ANY in that category
-            const topsCount = occasionItems.filter(i => i.category === 'top').length || 1;
-            const bottomsCount = occasionItems.filter(i => i.category === 'bottom').length || 1;
-            const shoesCount = occasionItems.filter(i => i.category === 'shoes').length || 1;
+            const occasionItems = wardrobeItems.filter(
+                (item) => item.occasion?.toLowerCase() === occasion
+            );
+
+            // Even if zero items match this occasion, we can still form an outfit (fallback)
+            // Show count as: occasion-specific combos, or 1 if we have items that can fall back
+            const topsCount = occasionItems.filter(i => i.category?.toLowerCase() === 'top').length || 1;
+            const bottomsCount = occasionItems.filter(i => i.category?.toLowerCase() === 'bottom').length || 1;
+            const shoesCount = occasionItems.filter(i => i.category?.toLowerCase() === 'shoes').length || 1;
 
             result[occasion] = topsCount * bottomsCount * shoesCount;
         }
