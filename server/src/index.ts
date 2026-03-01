@@ -141,6 +141,22 @@ app.post('/wardrobe/:id/unwear', requireAuth, (req: Request, res: Response) => {
     );
 });
 
+// DELETE /wardrobe/:id
+app.delete('/wardrobe/:id', requireAuth, (req: Request, res: Response) => {
+    const { id } = req.params;
+    const db = getDB();
+
+    db.run(
+        `DELETE FROM wardrobe_items WHERE id = ? AND user_id = ?`,
+        [id, req.userId],
+        function (err) {
+            if (err) { res.status(500).json({ error: err.message }); return; }
+            if (this.changes === 0) { res.status(404).json({ error: 'Item not found' }); return; }
+            res.json({ message: 'Item deleted', id });
+        }
+    );
+});
+
 // ─── Smart Recommendations ────────────────────────────────────────────────────
 
 function weightedRandom(items: any[]): any {
@@ -180,24 +196,51 @@ app.get('/recommendations', requireAuth, (req: Request, res: Response) => {
     db.all(sql, params, (err, rows: any[]) => {
         if (err) { res.status(500).json({ error: err.message }); return; }
 
-        const tops = rows.filter(item => item.category === 'top');
-        const bottoms = rows.filter(item => item.category === 'bottom');
-        const shoes = rows.filter(item => item.category === 'shoes');
+        const getCategoryItems = (category: string) => {
+            let items = rows.filter(item => item.category === category);
 
-        if (tops.length === 0 || bottoms.length === 0 || shoes.length === 0) {
-            res.status(400).json({
-                error: 'Not enough items. Need at least 1 top, 1 bottom, and 1 pair of shoes.',
-                missing: { tops: tops.length === 0, bottoms: bottoms.length === 0, shoes: shoes.length === 0 }
-            });
-            return;
-        }
-
-        res.json({
-            data: {
-                id: Date.now().toString(),
-                items: [mapRow(weightedRandom(tops)), mapRow(weightedRandom(bottoms)), mapRow(weightedRandom(shoes))],
-                createdAt: new Date().toISOString()
+            // If no items for this occasion, fallback to ANY item of this category for this user
+            if (items.length === 0 && occasion) {
+                return new Promise<any[]>((resolve, reject) => {
+                    db.all(
+                        'SELECT * FROM wardrobe_items WHERE user_id = ? AND category = ?',
+                        [req.userId, category],
+                        (err, fallbackRows) => {
+                            if (err) reject(err);
+                            else resolve(fallbackRows || []);
+                        }
+                    );
+                });
             }
+            return Promise.resolve(items);
+        };
+
+        Promise.all([
+            getCategoryItems('top'),
+            getCategoryItems('bottom'),
+            getCategoryItems('shoes')
+        ]).then(([tops, bottoms, shoes]) => {
+            if (tops.length === 0 || bottoms.length === 0 || shoes.length === 0) {
+                res.status(400).json({
+                    error: 'Not enough items. Need at least 1 top, 1 bottom, and 1 pair of shoes in your entire wardrobe.',
+                    missing: { tops: tops.length === 0, bottoms: bottoms.length === 0, shoes: shoes.length === 0 }
+                });
+                return;
+            }
+
+            res.json({
+                data: {
+                    id: Date.now().toString(),
+                    items: [
+                        mapRow(weightedRandom(tops)),
+                        mapRow(weightedRandom(bottoms)),
+                        mapRow(weightedRandom(shoes))
+                    ],
+                    createdAt: new Date().toISOString()
+                }
+            });
+        }).catch(err => {
+            res.status(500).json({ error: err.message });
         });
     });
 });
